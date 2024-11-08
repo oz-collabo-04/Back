@@ -1,0 +1,65 @@
+#version: '3.8'
+
+services:
+  django_gunicorn:
+    build: .
+    expose:
+      - "8000"
+    volumes:
+      - static_volume:/app/src/static  # static 파일 볼륨
+      - media_volume:/app/src/media  # media 파일 볼륨 (필요시)
+    environment:
+      - POSTGRES_DB=oz_collabo
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=db
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Postgres 데이터를 저장하는 볼륨
+    environment:
+      POSTGRES_DB: oz_collabo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:alpine  # Redis 이미지 추가
+    ports:
+      - "6379:6379"  # Redis 포트 매핑
+    healthcheck: # Redis 헬스체크 추가
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./resources/nginx/nginx.conf:/etc/nginx/conf.d/default.conf  # Nginx 설정 파일을 컨테이너에 연결
+      - static_volume:/app/src/static  # Django에서 수집된 static 파일
+      - media_volume:/app/src/media  # Django에서 사용하는 media 파일 (필요시)
+    depends_on:
+      - django_gunicorn
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:
