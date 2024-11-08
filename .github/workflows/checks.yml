@@ -1,0 +1,43 @@
+name: So New CI checks
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Packages & Libraries
+        run: |
+          poetry install
+
+      - name: Run isort (Import sorting)
+        run: |
+          poetry run isort src --check --diff
+
+      - name: Run black (Code formatting)
+        run: |
+          poetry run black src --check
+
+      - name: Run Tests with Coverage
+        run: |
+          poetry run coverage run --source="src" src/manage.py test
+          poetry run coverage report
