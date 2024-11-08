@@ -5,7 +5,7 @@ from config.settings.base import *
 DEBUG = True
 
 ENV = dotenv_values("../local.env")
-SECRET_KEY = ENV.get("DJANGO_SECRET_KEY", 'dkanrjsk')
+SECRET_KEY = ENV.get("DJANGO_SECRET_KEY", "dkanrjsk")
 
 
 # Database
