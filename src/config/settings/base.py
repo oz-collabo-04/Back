@@ -18,6 +18,9 @@ CUSTOM_APPS = []
 THIRDPARTY_APPS = [
     "rest_framework",
     "drf_spectacular",
+    "django_redis",
+    "channels_redis",
+    "storages",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRDPARTY_APPS
