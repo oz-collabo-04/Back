@@ -21,6 +21,7 @@ THIRDPARTY_APPS = [
     "django_redis",
     "channels_redis",
     "storages",
+    "djangorestframework-simplejwt",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRDPARTY_APPS
