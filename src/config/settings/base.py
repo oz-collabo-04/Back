@@ -1,4 +1,7 @@
+from datetime import timedelta
 from pathlib import Path
+
+from rest_framework.permissions import AllowAny
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -21,7 +24,9 @@ THIRDPARTY_APPS = [
     "django_redis",
     "channels_redis",
     "storages",
-    "djangorestframework-simplejwt",
+    "rest_framework_simplejwt",
+    "corsheaders",
+    "django_extensions",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRDPARTY_APPS
@@ -56,6 +61,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "UPDATE_LAST_LOGIN": True,
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -85,8 +96,14 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
-    # YOUR SETTINGS
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+
 }
 
 SPECTACULAR_SETTINGS = {
@@ -94,7 +111,6 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "so_new_wedding",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # OTHER SETTINGS
 }
 
 STATIC_URL = "/static/"
