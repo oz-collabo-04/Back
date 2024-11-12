@@ -1,11 +1,13 @@
 from dotenv import dotenv_values
-
+import random
 from config.settings.base import *
 
 DEBUG = False
 
 ENV = dotenv_values("../prod.env")
-SECRET_KEY = ENV.get("DJANGO_SECRET_KEY", "dkanrjsk")
+SECRET_KEY = ENV.get(
+    "DJANGO_SECRET_KEY", "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()?", k=50))
+)
 
 # Database
 
