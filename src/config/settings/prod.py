@@ -1,5 +1,7 @@
-from dotenv import dotenv_values
 import random
+
+from dotenv import dotenv_values
+
 from config.settings.base import *
 
 DEBUG = False
