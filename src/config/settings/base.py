@@ -16,7 +16,16 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 
-CUSTOM_APPS = []
+CUSTOM_APPS = [
+    "common",
+    "users",
+    "expert",
+    "chat",
+    "estimations",
+    "notifications",
+    "reservations",
+    "reviews",
+]
 
 THIRDPARTY_APPS = [
     "rest_framework",
@@ -27,6 +36,7 @@ THIRDPARTY_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "django_extensions",
+    "multiselectfield",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRDPARTY_APPS
@@ -60,6 +70,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+AUTH_USER_MODEL = "users.User"
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
