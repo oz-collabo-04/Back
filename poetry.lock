@@ -391,6 +391,20 @@ files = [
 Django = ">=3.2"
 
 [[package]]
+name = "django-multiselectfield"
+version = "0.1.13"
+description = "Django multiple select field"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django_multiselectfield-0.1.13-py3-none-any.whl", hash = "sha256:f146ef568c823a409f4021b98781666ec2debabfceca9176116d749dc39cb8b3"},
+    {file = "django_multiselectfield-0.1.13.tar.gz", hash = "sha256:437d72632f4c0ca416951917632529c3d1d42b62bb6c3c03e3396fa50265be94"},
+]
+
+[package.dependencies]
+django = ">=1.4"
+
+[[package]]
 name = "django-redis"
 version = "5.4.0"
 description = "Full featured redis cache backend for Django."
@@ -1135,4 +1149,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "f6874ee095f43f2602e6b164611e107168f79ad8d608b270a1a18b415936552d"
+content-hash = "ce6f2892c1717a8069e1121250aa5d1c28386f07141f824bf674c8261b5c5372"
