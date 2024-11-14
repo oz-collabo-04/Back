@@ -78,15 +78,15 @@ AREA_CHOICES = [
     ("gyeongnam_miryang", "경남-밀양"),
 ]
 
-BOOKING_STATUS_CHOICES = [
+RESERVATION_STATUS_CHOICES = [
     ("pending", "진행중"),
-    ("confirmed", "예약확정"),
-    ("cancel", "예약취소"),
+    ("confirmed", "예약 확정"),
+    ("cancel", "예약 취소"),
     ("cancelling", "취소중"),
     ("completed", "완료"),
 ]
 
-SCORE_CHOICES = [
+RATING_CHOICES = [
     (0.5, 0.5),
     (1, 1),
     (1.5, 1.5),
@@ -110,4 +110,10 @@ NOTIFICATION_TYPE_CHOICES = [
 GENDER_CHOICES = [
     ("male", "남성"),
     ("female", "여성"),
+]
+
+REQUEST_STATUS_CHOICES = [
+    ("pending","견적 요청중"),
+    ("completed","견적 받기 완료"),
+    ("canceled","견적 요청 취소")
 ]
