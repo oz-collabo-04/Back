@@ -7,7 +7,8 @@ from users.models import User
 class ChatRoom(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expert = models.ForeignKey(Expert, on_delete=models.CASCADE)
-    other_exist = models.BooleanField(default=True)
+    user_exist = models.BooleanField(default=True)
+    expert_exist = models.BooleanField(default=True)
 
 
 class Message(models.Model):
