@@ -112,8 +112,4 @@ GENDER_CHOICES = [
     ("female", "여성"),
 ]
 
-REQUEST_STATUS_CHOICES = [
-    ("pending","견적 요청중"),
-    ("completed","견적 받기 완료"),
-    ("canceled","견적 요청 취소")
-]
+REQUEST_STATUS_CHOICES = [("pending", "견적 요청중"), ("completed", "견적 받기 완료"), ("canceled", "견적 요청 취소")]
