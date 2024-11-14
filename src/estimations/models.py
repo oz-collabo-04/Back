@@ -4,8 +4,8 @@ from multiselectfield import MultiSelectField
 from common.constants.choices import (
     AREA_CHOICES,
     GENDER_CHOICES,
-    SERVICE_CHOICES,
     REQUEST_STATUS_CHOICES,
+    SERVICE_CHOICES,
 )
 from expert.models import Expert
 from users.models import User
@@ -35,7 +35,7 @@ class Estimation(models.Model):
 
 
 class RequestManager(models.Model):
-    expert = models.ForeignKey(Expert, on_delete=models.CASCADE, related_name='received_requests')
+    expert = models.ForeignKey(Expert, on_delete=models.CASCADE, related_name="received_requests")
     request = models.ForeignKey(EstimationsRequest, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
