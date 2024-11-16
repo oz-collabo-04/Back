@@ -45,8 +45,8 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=30, unique=True)
-    name = models.CharField(max_length=10)
-    gender = models.CharField(max_length=30, choices=GENDER_CHOICES)
+    name = models.CharField(max_length=25)
+    gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=13)
     prefer_service = MultiSelectField(choices=SERVICE_CHOICES, max_length=10, null=True, blank=True)
     prefer_location = MultiSelectField(choices=AREA_CHOICES, max_length=30, max_choices=3, null=True, blank=True)
