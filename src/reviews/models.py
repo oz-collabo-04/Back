@@ -6,7 +6,6 @@ from reservations.models import Reservation
 
 class Review(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
     content = models.TextField(max_length=500)
     rating = models.DecimalField(choices=RATING_CHOICES, max_digits=2, decimal_places=1)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -15,4 +14,4 @@ class Review(models.Model):
 
 class ReviewImages(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="images/reviews/")
+    image = models.ImageField(upload_to="images/reviews/", null=True, blank=True)
