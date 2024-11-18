@@ -1,14 +1,17 @@
 from django.urls import path
 
-from .views import (
-    GoogleLoginCallbackAPIView,
-    KakaoLoginCallbackAPIView,
-    NaverLoginCallbackAPIView,
-)
+from users import oauth_views, views
 
 app_name = "users"
 urlpatterns = [
-    path("login/naver/callback/", NaverLoginCallbackAPIView.as_view(), name="naver_callback"),  # Naver 콜백 처리
-    path("login/kakao/callback/", KakaoLoginCallbackAPIView.as_view(), name="kakao_callback"),
-    path("login/google/callback/", GoogleLoginCallbackAPIView.as_view(), name="google_callback"),
+    # oauth
+    path(
+        "login/naver/callback/", oauth_views.NaverLoginCallbackAPIView.as_view(), name="naver_callback"
+    ),  # Naver 콜백 처리
+    path("login/kakao/callback/", oauth_views.KakaoLoginCallbackAPIView.as_view(), name="kakao_callback"),
+    path("login/google/callback/", oauth_views.GoogleLoginCallbackAPIView.as_view(), name="google_callback"),
+    path("logout/", oauth_views.LogoutView.as_view(), name="logout"),
+    # user
+    path("mypage/", views.UserEditView.as_view(), name="user_mypage"),
+    path("mypage/deactivate/", views.UserDeactivateView.as_view(), name="user_deactivate"),
 ]

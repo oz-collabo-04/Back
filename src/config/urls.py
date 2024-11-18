@@ -10,7 +10,7 @@ from drf_spectacular.views import (
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/users/", include("users.urls")),
-    path("api/v1/expert/", include("expert.urls")),
+    path("api/v1/experts/", include("expert.urls")),
     path("api/v1/estimations/", include("estimations.urls")),
     path("api/v1/reservations/", include("reservations.urls")),
     path("api/v1/reviews/", include("reviews.urls")),
