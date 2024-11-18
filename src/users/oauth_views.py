@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from users.models import User
 
@@ -106,6 +106,7 @@ class NaverLoginCallbackAPIView(APIView):
 
         user.save()
         return user
+
 
 class KakaoLoginCallbackAPIView(APIView):
     @extend_schema(
