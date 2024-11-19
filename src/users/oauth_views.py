@@ -18,7 +18,7 @@ from users.models import User
 # 구글은 전화번호를 받아오지 않기때문에 이메일이 다르면 유저 중복생성을 막을 수가 없네?요..;.
 class NaverLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["Oauth"],
+        tags=["oauth-back"],
         parameters=[
             OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("state", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -39,6 +39,53 @@ class NaverLoginCallbackAPIView(APIView):
         # 네이버에서 code와 state 매개변수로 리디렉션될 때 처리
         code = request.GET.get("code")
         state = request.GET.get("state")
+
+        # code 또는 state가 없는 경우 예외 발생
+        if not code or not state:
+            raise PermissionDenied("잘못된 code 또는 state 매개변수입니다.")
+
+        # 네이버로부터 액세스 토큰을 가져오는 함수 호출
+        access_token_data = self.get_naver_access_token(code, state)
+        access_token = access_token_data.get("access_token")
+        if not access_token:
+            raise PermissionDenied("네이버에서 액세스 토큰을 가져오는데 실패했습니다.")
+
+        # 가져온 액세스 토큰을 사용하여 사용자 정보 가져오기
+        user_info = self.get_naver_user_info(access_token)
+        user = self.create_or_update_user(user_info)
+
+        # 애플리케이션용 리프레시 토큰 생성
+        refresh = RefreshToken.for_user(user)
+        # 애플리케이션용 액세스 토큰 생성
+        access_token = str(AccessToken.for_user(user))
+
+        # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
+        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response.set_cookie("refresh_token", str(refresh), httponly=True, secure=True, samesite="Lax")
+        return response
+
+    @extend_schema(
+        tags=["Oauth"],
+        parameters=[
+            OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("state", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ],
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp7...",
+                    }
+                },
+            }
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        # 네이버에서 code와 state 매개변수로 리디렉션될 때 처리
+        code = request.data.get("code")
+        state = request.data.get("state")
 
         # code 또는 state가 없는 경우 예외 발생
         if not code or not state:
@@ -110,7 +157,7 @@ class NaverLoginCallbackAPIView(APIView):
 
 class KakaoLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["Oauth"],
+        tags=["oauth-back"],
         parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
         responses={
             200: {
@@ -127,6 +174,49 @@ class KakaoLoginCallbackAPIView(APIView):
     def get(self, request, *args, **kwargs):
         # 카카오에서 `code` 매개변수로 리디렉션되었을 때 처리
         code = request.GET.get("code")
+
+        # code가 없는 경우 예외 발생
+        if not code:
+            raise PermissionDenied("잘못된 code 매개변수입니다.")
+
+        # 카카오로부터 액세스 토큰 가져오기
+        access_token_data = self.get_kakao_access_token(code)
+        access_token = access_token_data.get("access_token")
+        if not access_token:
+            raise PermissionDenied("카카오에서 액세스 토큰을 가져오는데 실패했습니다.")
+
+        # 액세스 토큰을 사용하여 사용자 정보 가져오기
+        user_info = self.get_kakao_user_info(access_token)
+        user = self.create_or_update_user(user_info)
+
+        # 애플리케이션용 액세스 및 리프레시 토큰 생성
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
+        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
+        return response
+
+    @extend_schema(
+        tags=["Oauth"],
+        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "array",
+                        "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp3tyP7dHQoP0zNKHUq2gY",
+                    }
+                },
+            }
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        # 카카오에서 `code` 매개변수로 리디렉션되었을 때 처리
+        code = request.data.get("code")
 
         # code가 없는 경우 예외 발생
         if not code:
@@ -219,7 +309,7 @@ class KakaoLoginCallbackAPIView(APIView):
 
 class GoogleLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["Oauth"],
+        tags=["oauth-back"],
         parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
         responses={
             200: {"type": "object", "properties": {"access_token": {"type": "string", "example": "ya29.a0AfH6SMC..."}}}
@@ -228,6 +318,42 @@ class GoogleLoginCallbackAPIView(APIView):
     def get(self, request, *args, **kwargs):
         # Google에서 `code` 매개변수로 리디렉션되었을 때 처리
         code = request.GET.get("code")
+
+        # code가 없는 경우 예외 발생
+        if not code:
+            raise PermissionDenied("잘못된 code 매개변수입니다.")
+
+        # Google로부터 액세스 토큰 가져오기
+        access_token_data = self.get_google_access_token(code)
+        access_token = access_token_data.get("access_token")
+        if not access_token:
+            print(access_token_data.get("error"))
+            raise PermissionDenied("Google에서 액세스 토큰을 가져오는 데 실패했습니다.")
+
+        # 액세스 토큰을 사용하여 사용자 정보 가져오기
+        user_info = self.get_google_user_info(access_token)
+        user = self.create_or_update_user(user_info)
+
+        # 애플리케이션용 액세스 및 리프레시 토큰 생성
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
+        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
+        return response
+
+    @extend_schema(
+        tags=["Oauth"],
+        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        responses={
+            200: {"type": "object", "properties": {"access_token": {"type": "string", "example": "ya29.a0AfH6SMC..."}}}
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        # Google에서 `code` 매개변수로 리디렉션되었을 때 처리
+        code = request.data.get("code")
 
         # code가 없는 경우 예외 발생
         if not code:
