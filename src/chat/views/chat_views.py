@@ -23,12 +23,13 @@ class ChatRoomListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         status_filter = self.request.query_params.get("status", "all")
         valid_statuses = ["pending", "completed", "canceled"]
+        user = self.request.user
 
         if status_filter == "all":
-            return ChatRoom.objects.all()
+            return ChatRoom.objects.filter(user=user)
         elif status_filter in valid_statuses:
-            estimation_requests = EstimationsRequest.objects.filter(status=status_filter)
-            return ChatRoom.objects.filter(estimation_request__in=estimation_requests)
+            estimation_requests = EstimationsRequest.objects.filter(status=status_filter, user=user)
+            return ChatRoom.objects.filter(estimation_request__in=estimation_requests, user=user)
         else:
             return ChatRoom.objects.none()
 
