@@ -9,11 +9,27 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, data):
-        if "user" not in data or "expert" not in data:
-            raise serializers.ValidationError("유저와 전문가 정보는 필수입니다.")
-        if data["user"] == data["expert"]:
-            raise serializers.ValidationError("유저와 전문가는 동일할 수 없습니다.")
+        # 유저와 전문가 각각 유효성 검사 수행
+        self.validate_user(data)
+        self.validate_expert(data)
+        self.validate_user_and_expert(data)
         return data
+
+    def validate_user(self, data):
+        user = data.get("user")
+        if not user:
+            raise serializers.ValidationError("유저 정보는 필수입니다.")
+
+    def validate_expert(self, data):
+        expert = data.get("expert")
+        if not expert:
+            raise serializers.ValidationError("전문가 정보는 필수입니다.")
+
+    def validate_user_and_expert(self, data):
+        user = data.get("user")
+        expert = data.get("expert")
+        if user == expert:
+            raise serializers.ValidationError("유저와 전문가는 동일할 수 없습니다.")
 
 
 class MessageSerializer(serializers.ModelSerializer):

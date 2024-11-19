@@ -45,15 +45,11 @@ class NotificationDetailAPIView(generics.UpdateAPIView):
 
     def patch(self, request, *args, **kwargs):
         notification = self.get_object()
-        notification.is_read = True
-        notification.save()
-        serializer = self.get_serializer(notification)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notification_{self.request.user.id}",
-            {"type": "send_notification", "message": f"알림 {notification.id}이(가) 읽음 처리되었습니다."},
-        )
-        return Response(serializer.data)
+        serializer = self.get_serializer(notification, data={"is_read": True}, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Notification"])
