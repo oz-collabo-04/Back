@@ -5,20 +5,20 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from faker import Faker
 
-from users.models import User
-from expert.models import Expert, Career
-from estimations.models import Estimation, EstimationsRequest, RequestManager
-from notifications.models import Notification
-from reservations.models import Reservation, CancelManager
-from reviews.models import Review, ReviewImages
 from common.constants.choices import (
-    SERVICE_CHOICES,
-    RESERVATION_STATUS_CHOICES,
     AREA_CHOICES,
     GENDER_CHOICES,
-    RATING_CHOICES,
     NOTIFICATION_TYPE_CHOICES,
+    RATING_CHOICES,
+    RESERVATION_STATUS_CHOICES,
+    SERVICE_CHOICES,
 )
+from estimations.models import Estimation, EstimationsRequest, RequestManager
+from expert.models import Career, Expert
+from notifications.models import Notification
+from reservations.models import CancelManager, Reservation
+from reviews.models import Review, ReviewImages
+from users.models import User
 
 
 class Command(BaseCommand):
@@ -71,13 +71,13 @@ class Command(BaseCommand):
             service=random.choice(SERVICE_CHOICES)[0],
             standard_charge=random.randint(100000, 900000),
             available_location=random.choice(AREA_CHOICES)[0],
-            appeal=fake.paragraph(nb_sentences=5)
+            appeal=fake.paragraph(nb_sentences=5),
         )
         print(f"Superuser created: {superuser.email}")
         print(f"Expert profile created for superuser.")
 
     def create_expert_users(self, fake):
-        print('Creating Expert profiles...')
+        print("Creating Expert profiles...")
         for i in range(1, 20):
             expert_user = User.objects.create_user(
                 email=f"{fake.first_name() + str(random.randint(1, 999))}@naver.com",
@@ -94,34 +94,36 @@ class Command(BaseCommand):
                 service=random.choice(SERVICE_CHOICES)[0],
                 standard_charge=random.randint(100000, 900000),
                 available_location=random.choice(AREA_CHOICES)[0],
-                appeal=fake.paragraph(nb_sentences=5)
+                appeal=fake.paragraph(nb_sentences=5),
             )
 
             for _ in range(random.randint(1, 3)):
                 random_num = random.randint(1, 5)
                 Career.objects.create(
                     expert=expert,
-                    title=f'{fake.company()} {random_num}년 근무',
+                    title=f"{fake.company()} {random_num}년 근무",
                     description=fake.paragraph(nb_sentences=2),
                     start_date=timezone.now(),
                     end_date=timezone.now().replace(year=timezone.now().year + random_num),
                 )
-            careers = expert.career_set.all().values_list('title', flat=True)
+            careers = expert.career_set.all().values_list("title", flat=True)
 
             # 최종적으로 생성된 전문가의 정보를 출력
-            print(f"""
+            print(
+                f"""
                 Expert profile created for superuser: \n
                 - email: {expert.user.email}\n
                 - service: {expert.service}\n
                 - charge: {expert.standard_charge}\n
                 - location: {expert.get_available_location_display()}\n
                 - careers:
-                """)
+                """
+            )
             for index, career_title in enumerate(careers):
                 print(f"{index}. {career_title}")
 
     def create_guest_users(self, fake):
-        print('Creating Guest Users...')
+        print("Creating Guest Users...")
 
         for i in range(1, 20):
             guest_user = User.objects.create_user(
@@ -136,7 +138,7 @@ class Command(BaseCommand):
             print(f"Guest User created: {guest_user.email}")
 
     def create_estimation_requests(self, fake):
-        print('Creating Estimation Requests...')
+        print("Creating Estimation Requests...")
         guest_users = User.objects.filter(expert__isnull=True)
         service_list = [service[0] for service in SERVICE_CHOICES]
 
@@ -146,31 +148,33 @@ class Command(BaseCommand):
                 service_list=random.sample(service_list, random.randint(1, 4)),
                 prefer_gender=random.choice(GENDER_CHOICES)[0],
                 location=random.choice(AREA_CHOICES)[0],
-                wedding_hall=fake.building_name()+'wedding_hole',
+                wedding_hall=fake.building_name() + "wedding_hole",
                 wedding_datetime=timezone.now() + timedelta(days=random.randint(1, 30)),
-                status='pending',
+                status="pending",
             )
 
             # 요청 서비스를 제공하는 전문가를 가져옴
             experts = Expert.objects.filter(service__in=request.service_list)
 
-            print(f'Creating RequestManager Object for Experts providing the service item: {request.service_list}')
+            print(f"Creating RequestManager Object for Experts providing the service item: {request.service_list}")
             for expert in experts:
                 # 위에서 가져온 전문가 각각에 요청 관리를 위한 모델을 생성
                 manager = RequestManager.objects.create(
                     request=request,
                     expert=expert,
                 )
-                print(f'''
+                print(
+                    f"""
                     RequestManager Created.
                     RequestManager id: {manager.id}\n
                     Expert Email: {expert.user.email}
-                    ''')
+                    """
+                )
 
     def create_estimations(self):
-        print('Creating Estimations...')
+        print("Creating Estimations...")
         expert_users = User.objects.filter(expert__isnull=False)
-        requests = EstimationsRequest.objects.filter(status='pending')
+        requests = EstimationsRequest.objects.filter(status="pending")
 
         for request in requests:
             for user in expert_users:
@@ -182,16 +186,18 @@ class Command(BaseCommand):
                     due_date=request.wedding_datetime,
                     charge=random.randint(10000, 50000),
                 )
-                print(f'''
+                print(
+                    f"""
                     Created Estimation for request user - {request.user.email}.\n
                     Estimation id: {estimation.id}\n
                     request id: {request.id}\n
                     Expert id: {user.expert.id}\n 
-                ''')
+                """
+                )
 
     def create_reservations(self, fake):
-        print('Creating Reservations...')
-        estimations = Estimation.objects.filter(request__status='pending')
+        print("Creating Reservations...")
+        estimations = Estimation.objects.filter(request__status="pending")
 
         # 모든 견적을 for문으로 순회하며 예약객체를 생성
         for estimation in estimations:
@@ -199,19 +205,16 @@ class Command(BaseCommand):
                 estimation=estimation,
                 status=random.choice(RESERVATION_STATUS_CHOICES)[0],
             )
-            print(f'Created Reservation: {reservation.id}')
+            print(f"Created Reservation: {reservation.id}")
             # 생성된 예약이 취소된 상태이면 취소 사유 객체를 생성
-            if reservation.status in ['cancelled', 'cancel']:
-                CancelManager.objects.create(
-                    reservation=reservation,
-                    reason=fake.paragraph(nb_sentences=3)
-                )
-                print(f'Created RequestManager Object for Reservation_id:{reservation.id}')
+            if reservation.status in ["cancelled", "cancel"]:
+                CancelManager.objects.create(reservation=reservation, reason=fake.paragraph(nb_sentences=3))
+                print(f"Created RequestManager Object for Reservation_id:{reservation.id}")
 
     def create_reviews(self, fake):
-        print('Creating Reviews...')
+        print("Creating Reviews...")
         # 이용 완료된 예약객체를 모두 가져옴
-        reservations = Reservation.objects.filter(status='completed')
+        reservations = Reservation.objects.filter(status="completed")
 
         # for문으로 이용완료된 Reservation의 쿼리셋을 모두 순회하며 Review를 생성
         for reservation in reservations:
@@ -225,10 +228,10 @@ class Command(BaseCommand):
                     review=review,
                     image=fake.image_url(width=200, height=200),
                 )
-            print(f'Created Review: {review.id}')
+            print(f"Created Review: {review.id}")
 
     def create_notifications(self, fake):
-        print('Creating Notifications...')
+        print("Creating Notifications...")
         users = User.objects.filter(is_active=True)
 
         # 모든 유저를 대상으로 랜덤한 알림을 1 ~ 5개 생성
@@ -241,9 +244,11 @@ class Command(BaseCommand):
                     notification_type=random.choice(NOTIFICATION_TYPE_CHOICES)[0],
                     is_read=False,
                 )
-                print(f'''
+                print(
+                    f"""
                     Created Notification.\n
                     receiver_id: {user.id}\n
                     notification_type: {notification.notification_type}\n
                     title: {notification.title}\n
-                ''')
+                """
+                )
