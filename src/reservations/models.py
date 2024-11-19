@@ -11,7 +11,7 @@ class Reservation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class CancelManager(models.Manager):
+class CancelManager(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

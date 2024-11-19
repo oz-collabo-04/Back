@@ -13,7 +13,7 @@ from users.models import User
 
 class EstimationsRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    service_list = MultiSelectField(choices=SERVICE_CHOICES, max_length=10)
+    service_list = MultiSelectField(choices=SERVICE_CHOICES, max_length=30)
     prefer_gender = models.CharField(max_length=20, choices=GENDER_CHOICES)
     location = MultiSelectField(choices=AREA_CHOICES, max_length=30, max_choices=3)
     wedding_hall = models.CharField(max_length=50)

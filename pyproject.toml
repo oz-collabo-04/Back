@@ -25,6 +25,7 @@ django-cors-headers = "^4.6.0"
 requests = "^2.32.3"
 django-extensions = "^3.2.3"
 django-multiselectfield = "^0.1.13"
+faker = "^33.0.0"
 
 [build-system]
 requires = ["poetry-core"]
