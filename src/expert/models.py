@@ -6,7 +6,7 @@ from users.models import User
 
 
 class Expert(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     expert_image = models.ImageField(upload_to="images/experts/profile/")
     service = models.CharField(choices=SERVICE_CHOICES, max_length=10, default="")
     standard_charge = models.IntegerField(default=0)
