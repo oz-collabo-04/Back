@@ -13,7 +13,7 @@ from notifications.serializers import NotificationSerializer
 @extend_schema(tags=["Notification"])
 class NotificationListAPIView(generics.ListAPIView):
     """
-    해당 유저에 대한 알림 목록 조회 및 읽지 않은 알림의 수를 같이 반환
+    해당 유저에 대한 알림 목록 조회 및 읽지 않은 알림의 수를 같이 반환 API
     """
 
     permission_classes = [IsAuthenticated]
@@ -33,7 +33,7 @@ class NotificationListAPIView(generics.ListAPIView):
 @extend_schema(tags=["Notification"])
 class NotificationDetailAPIView(generics.UpdateAPIView):
     """
-    특정 알림 읽음 처리
+    특정 알림 읽음 처리 API
     """
 
     permission_classes = [IsAuthenticated]
@@ -55,7 +55,7 @@ class NotificationDetailAPIView(generics.UpdateAPIView):
 @extend_schema(tags=["Notification"])
 class NotificationReadAllAPIView(generics.UpdateAPIView):
     """
-    전체 알림 읽음 처리
+    전체 알림 읽음 처리 API
     """
 
     permission_classes = [IsAuthenticated]
