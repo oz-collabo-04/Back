@@ -162,4 +162,3 @@ KAKAO_ACCESS_TOKEN_INFO_URL = "https://kapi.kakao.com/v1/user/access_token_info"
 GOOGLE_REDIRECT_URI = "http://localhost/api/v1/users/login/google/callback/"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
-
