@@ -1,14 +1,16 @@
 from rest_framework import serializers
 
+from estimations.models import Estimation
 from expert.models import Expert
 from reservations.models import Reservation
-from estimations.models import Estimation
 from users.models import User  # 사용자 모델 위치 확인 필요
 
-class UserInfoSerializer(serializers.ModelSerializer): # 사용자 정보를 직렬화
+
+class UserInfoSerializer(serializers.ModelSerializer):  # 사용자 정보를 직렬화
     class Meta:
         model = User
         fields = ("id", "name", "email", "phone_number")
+
 
 class ExpertInfoSerializer(serializers.ModelSerializer):
     user = UserInfoSerializer(read_only=True)
@@ -19,7 +21,7 @@ class ExpertInfoSerializer(serializers.ModelSerializer):
 
 
 class EstimationInfoSerializer(serializers.ModelSerializer):
-    request_user = UserInfoSerializer(source='request.user', read_only=True)
+    request_user = UserInfoSerializer(source="request.user", read_only=True)
     expert = ExpertInfoSerializer(read_only=True)
 
     class Meta:
@@ -33,8 +35,9 @@ class EstimationInfoSerializer(serializers.ModelSerializer):
             "location",
             "due_date",
             "charge",
-            "created_at"
+            "created_at",
         )
+
 
 class ReservationInfoSerializer(serializers.ModelSerializer):
     estimation = EstimationInfoSerializer(read_only=True)

@@ -1,19 +1,20 @@
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
-from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin
+from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from reservations.models import Reservation
+
 from estimations.models import Estimation
-from reservations.seriailzers import ReservationInfoSerializer, ReservationCreateSerializer
+from reservations.models import Reservation
+from reservations.seriailzers import (
+    ReservationCreateSerializer,
+    ReservationInfoSerializer,
+)
 
 
 class ReservationListAPIView(generics.ListAPIView):
     queryset = Reservation.objects.all().prefetch_related(
-        "estimation",
-        "estimation__request",
-        "estimation__request__user",
-        "estimation__expert"
+        "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
     )
     serializer_class = ReservationInfoSerializer
     permission_classes = [AllowAny]
@@ -21,24 +22,18 @@ class ReservationListAPIView(generics.ListAPIView):
 
 class ReservationCreateAPIView(generics.CreateAPIView):
     queryset = Reservation.objects.all().prefetch_related(
-        "estimation",
-        "estimation__request",
-        "estimation__request__user",
-        "estimation__expert"
+        "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
     )
     serializer_class = ReservationCreateSerializer
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        serializer.save(status='pending')
+        serializer.save(status="pending")
 
 
 class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMixin, UpdateModelMixin):
     queryset = Reservation.objects.all().prefetch_related(
-        "estimation",
-        "estimation__request",
-        "estimation__request__user",
-        "estimation__expert"
+        "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
     )
     serializer_class = ReservationInfoSerializer
     permission_classes = [AllowAny]
