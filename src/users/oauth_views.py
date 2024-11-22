@@ -8,7 +8,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from users.models import User
@@ -436,6 +439,7 @@ class LogoutView(APIView):
     """
     액세스 토큰을 기반으로 로그아웃 처리
     """
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -445,7 +449,10 @@ class LogoutView(APIView):
             200: {
                 "type": "object",
                 "properties": {
-                    "detail": {"type": "string", "example": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다."}
+                    "detail": {
+                        "type": "string",
+                        "example": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다.",
+                    }
                 },
             },
             401: {
@@ -609,4 +616,3 @@ class RefreshAccessTokenAPIView(APIView):
                 {"detail": f"오류가 발생했습니다: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
