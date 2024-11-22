@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from users.models import User
@@ -432,31 +433,180 @@ class GoogleLoginCallbackAPIView(APIView):
 
 # #### 로그아웃
 class LogoutView(APIView):
+    """
+    액세스 토큰을 기반으로 로그아웃 처리
+    """
     permission_classes = [IsAuthenticated]
-    serializer_class = None
 
     @extend_schema(
         tags=["User_Mypage"],
-        summary="로그인 된 사용자 - 로그아웃",
+        summary="로그인 된 사용자 - 로그아웃 (액세스 토큰 기반)",
         responses={
-            200: {"type": "object", "properties": {"detail": {"type": "string", "example": "로그아웃에 성공했습니다."}}}
+            200: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다."}
+                },
+            },
+            401: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "유효하지 않거나 만료된 액세스 토큰입니다."},
+                },
+            },
         },
     )
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
+        """
+        POST 요청으로 로그아웃 처리
+        """
+        # Authorization 헤더에서 액세스 토큰 가져오기
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Authorization 헤더에 Bearer 토큰이 포함되지 않았습니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        access_token = auth_header.split(" ")[1]
+
         try:
-            # 클라이언트가 제공한 리프레시 토큰을 사용하여 로그아웃 처리
-            refresh_token = request.data.get("refresh_token")
-            if not refresh_token:
-                return Response({"detail": "refresh_token이 제공되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            # 액세스 토큰 디코딩 및 사용자 ID 가져오기
+            decoded_access_token = AccessToken(access_token)
+            user_id = decoded_access_token["user_id"]
 
-            # 리프레시 토큰을 블랙리스트에 추가하여 무효화
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            # 사용자와 관련된 모든 리프레시 토큰 가져오기
+            user_tokens = OutstandingToken.objects.filter(user_id=user_id)
 
-            return Response({"detail": "로그아웃에 성공했습니다."}, status=status.HTTP_205_RESET_CONTENT)
+            if not user_tokens.exists():
+                return Response(
+                    {"detail": "사용자와 연결된 리프레시 토큰이 없습니다."},
+                    status=status.HTTP_200_OK,
+                )
+
+            # 리프레시 토큰 블랙리스트에 추가
+            for token in user_tokens:
+                try:
+                    RefreshToken(token.token).blacklist()
+                except Exception as e:
+                    print(f"블랙리스트 등록 실패: {e}")
+                    continue  # 실패한 경우 무시
+
+            return Response(
+                {"detail": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다."},
+                status=status.HTTP_200_OK,
+            )
+
         except TokenError:
-            return Response({"detail": "이미 무효화된 토큰입니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "유효하지 않거나 만료된 액세스 토큰입니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         except Exception as e:
             return Response(
-                {"detail": "토큰 무효화에 실패했습니다.", "error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": f"오류가 발생했습니다: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# 리프레시토큰 검증 -> 액세스토큰 재발급
+class RefreshAccessTokenAPIView(APIView):
+    """
+    액세스 토큰을 기반으로 사용자와 연결된 리프레시 토큰을 검증하여
+    새 액세스 토큰을 발급하거나 401 오류를 반환하는 API.
+    """
+
+    @extend_schema(
+        tags=["Oauth"],
+        summary="액세스 토큰 -> 리프레시 토큰 검증 -> 새 액세스 토큰 재발급",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "새로운 액세스 토큰이 발급되었습니다."},
+                    "access_token": {"type": "string", "example": "new_access_token_example"},
+                },
+            },
+            401: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "유효하지 않거나 만료된 리프레시 토큰입니다."},
+                    "token_expired": {"type": "boolean", "example": True},
+                },
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "액세스 토큰이 제공되지 않았습니다."},
+                },
+            },
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        """
+        POST 요청으로 액세스 토큰을 기반으로 리프레시 토큰 검증 후 새로운 액세스 토큰 발급.
+        """
+        # Authorization 헤더에서 액세스 토큰 가져오기
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Authorization 헤더에 Bearer 토큰이 포함되지 않았습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        access_token = auth_header.split(" ")[1]
+
+        try:
+            # 액세스 토큰 디코딩 및 사용자 ID 추출
+            decoded_access_token = AccessToken(access_token)
+            user_id = decoded_access_token["user_id"]
+
+            # 해당 사용자와 연결된 리프레시 토큰 가져오기
+            user_tokens = OutstandingToken.objects.filter(user_id=user_id)
+
+            if not user_tokens.exists():
+                return Response(
+                    {"detail": "사용자와 연결된 리프레시 토큰이 존재하지 않습니다."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # 유효한 리프레시 토큰 검색
+            for token in user_tokens:
+                try:
+                    refresh_token = RefreshToken(token.token)
+
+                    # 블랙리스트에 등록되지 않은 리프레시 토큰이 있다면 새 액세스 토큰 발급
+                    if not BlacklistedToken.objects.filter(token=token).exists():
+                        new_access_token = str(refresh_token.access_token)
+
+                        return Response(
+                            {
+                                "detail": "새로운 액세스 토큰이 발급되었습니다.",
+                                "access_token": new_access_token,
+                            },
+                            status=status.HTTP_200_OK,
+                        )
+                except TokenError:
+                    continue  # 유효하지 않은 리프레시 토큰은 무시
+
+            # 유효한 리프레시 토큰이 없을 경우
+            return Response(
+                {
+                    "detail": "유효하지 않거나 만료된 리프레시 토큰입니다.",
+                    "token_expired": True,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except TokenError:
+            # 액세스 토큰이 유효하지 않을 경우
+            return Response(
+                {"detail": "유효하지 않거나 만료된 액세스 토큰입니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except Exception as e:
+            # 예상치 못한 오류 처리
+            return Response(
+                {"detail": f"오류가 발생했습니다: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
