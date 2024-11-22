@@ -443,14 +443,14 @@ logger = logging.getLogger(__name__)
 #### 로그아웃
 class LogoutView(APIView):
     """
-    액세스 토큰을 기반으로 로그아웃 처리
+    로그아웃 처리 (액세스 토큰 및 리프레시 토큰 무효화)
     """
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["User_Mypage"],
-        summary="로그인 된 사용자 - 로그아웃 (액세스 토큰 기반)",
+        summary="로그아웃 처리 (액세스 토큰 기반)",
         responses={
             200: {
                 "type": "object",
@@ -458,7 +458,7 @@ class LogoutView(APIView):
                     "detail": {
                         "type": "string",
                         "example": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다.",
-                    }
+                    },
                 },
             },
             400: {
@@ -502,37 +502,34 @@ class LogoutView(APIView):
             user_id = decoded_access_token["user_id"]
             logger.info("사용자 ID %s로부터 로그아웃 요청 수신.", user_id)
 
-            # 사용자와 관련된 모든 리프레시 토큰 가져오기
-            user_tokens = OutstandingToken.objects.filter(user_id=user_id)
-
-            if not user_tokens.exists():
-                logger.info("사용자 ID %s와 연결된 리프레시 토큰이 없습니다.", user_id)
+            # 리프레시 토큰 가져오기
+            refresh_token = request.COOKIES.get("refresh_token")
+            if not refresh_token:
+                logger.warning("사용자와 연관된 리프레시 토큰이 없습니다.")
                 return Response(
-                    {"detail": "사용자와 연결된 리프레시 토큰이 없습니다."},
-                    status=status.HTTP_200_OK,
+                    {"detail": "사용자와 연관된 리프레시 토큰이 없습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             # 리프레시 토큰 블랙리스트에 추가
-            failed_tokens = []
-            for token in user_tokens:
-                try:
-                    RefreshToken(token.token).blacklist()
-                except Exception as e:
-                    logger.error("토큰 %s 블랙리스트 등록 실패: %s", token.jti, str(e))
-                    failed_tokens.append(token.jti)
-                    continue
+            try:
+                RefreshToken(refresh_token).blacklist()
+                logger.info("리프레시 토큰이 블랙리스트에 성공적으로 등록되었습니다.")
+            except Exception as e:
+                logger.error("리프레시 토큰 블랙리스트 등록 실패: %s", str(e))
+                return Response(
+                    {"detail": f"리프레시 토큰 블랙리스트 등록 실패: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
-            if failed_tokens:
-                logger.warning("다음 토큰들은 블랙리스트 등록에 실패했습니다: %s", failed_tokens)
-
-            logger.info("사용자 ID %s의 모든 리프레시 토큰이 무효화되었습니다.", user_id)
-            return Response(
-                {
-                    "detail": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다.",
-                    "failed_tokens": failed_tokens if failed_tokens else None,
-                },
+            # 쿠키에서 리프레시 토큰 삭제
+            response = Response(
+                {"detail": "로그아웃에 성공했습니다. 모든 리프레시 토큰이 무효화되었습니다."},
                 status=status.HTTP_200_OK,
             )
+            response.delete_cookie("refresh_token")
+            logger.info("사용자 ID %s의 로그아웃이 완료되었습니다.", user_id)
+            return response
 
         except TokenError as e:
             logger.warning("유효하지 않거나 만료된 액세스 토큰: %s", str(e))
