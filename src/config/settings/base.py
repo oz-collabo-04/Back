@@ -33,6 +33,7 @@ THIRDPARTY_APPS = [
     "channels_redis",
     "storages",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_extensions",
     "multiselectfield",
@@ -81,7 +82,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "users.User"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "UPDATE_LAST_LOGIN": True,
 }
