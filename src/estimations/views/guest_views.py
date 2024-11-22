@@ -8,7 +8,7 @@ from rest_framework.generics import (
 from rest_framework.permissions import IsAuthenticated
 
 from estimations.models import Estimation, EstimationsRequest
-from estimations.seriailzers import (
+from estimations.serializers.guest_seriailzers import (
     EstimationRetrieveSerializer,
     EstimationSerializer,
     EstimationsRequestSerializer,
@@ -55,12 +55,11 @@ class EstimationRequestListCreateAPIView(ListCreateAPIView):
 class EstimationRequestDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = EstimationsRequestSerializer
-    queryset = Estimation.objects.all()
-    lookup_field = "estimation_id"
+    queryset = EstimationsRequest.objects.all()
+    lookup_field = "request_id"
 
     def get_object(self):
         object = get_object_or_404(self.queryset, id=self.kwargs[self.lookup_field], user=self.request.user)
-        print(self.request.user.id)
         return object
 
     def destroy(self, request, *args, **kwargs):
