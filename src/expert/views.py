@@ -20,7 +20,6 @@ from expert.seriailzers import (
     CareerSerializer,
     ExpertCreateSerializer,
     ExpertDetailSerializer,
-    RequestManagerSerializer,
 )
 
 
@@ -210,42 +209,3 @@ class CareerDetailView(RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("본인의 경력 정보만 삭제할 수 있습니다.")
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)  # 명시적으로 204 응답 반환
-
-
-#     전문가가 받은 요청견적의 리스트를 조회
-class EstimationsRequestListViews(ListAPIView):
-    serializer_class = RequestManagerSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        expert_id = self.kwargs.get("expert_id")
-        return RequestManager.objects.filter(expert_id=expert_id)
-
-    @extend_schema(
-        tags=["Expert"],
-        summary="전문가가 받은 견적 요청 리스트를 조회",
-        responses={200: RequestManagerSerializer()},
-    )
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-
-    # 전문가가 받은 특정 견적요청을 삭제
-
-
-class EstimationsRequestDeleteView(DestroyAPIView):
-    serializer_class = RequestManagerSerializer
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        tags=["Expert"],
-        summary="전문가가 받은 특정 견적 요청을 삭제",
-        responses={204: OpenApiTypes.NONE},
-    )
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # 로그인된 사용자가 해당 전문가의 소유자인지 확인
-        if request.user != instance.expert.user:
-            raise PermissionDenied("자신의 정보만 삭제할 수 있습니다.")
-        # 요청 삭제 후 204 상태 코드 반환
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
