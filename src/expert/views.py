@@ -20,7 +20,6 @@ from expert.seriailzers import (
     CareerSerializer,
     ExpertCreateSerializer,
     ExpertDetailSerializer,
-    RequestManagerSerializer,
 )
 
 
@@ -210,4 +209,3 @@ class CareerDetailView(RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("본인의 경력 정보만 삭제할 수 있습니다.")
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)  # 명시적으로 204 응답 반환
-

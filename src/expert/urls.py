@@ -16,5 +16,4 @@ urlpatterns = [
     path("<int:pk>/", ExpertDetailView.as_view(), name="expert_detail"),
     path("<int:expert_id>/careers/", CareerListViews.as_view(), name="expert_careers"),
     path("<int:expert_id>/careers/<int:pk>/", CareerDetailView.as_view(), name="career_detail"),
-
 ]
