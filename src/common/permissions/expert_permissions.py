@@ -7,4 +7,4 @@ class IsExpert(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return bool(request.user.is_expert and hasattr(request.user, 'expert'))
+        return bool(request.user.is_expert and hasattr(request.user, "expert"))

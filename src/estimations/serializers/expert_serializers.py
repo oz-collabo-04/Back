@@ -7,16 +7,7 @@ from estimations.models import Estimation
 class EstimationCreateByExpertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Estimation
-        fields = [
-            "id",
-            "request",
-            "expert",
-            "due_date",
-            "service",
-            "charge",
-            "created_at",
-            "updated_at"
-        ]
+        fields = ["id", "request", "expert", "due_date", "service", "charge", "created_at", "updated_at"]
         read_only_fields = ("id", "expert", "created_at", "updated_at")
 
 
@@ -24,14 +15,5 @@ class EstimationCreateByExpertSerializer(serializers.ModelSerializer):
 class EstimationUpdateByExpertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Estimation
-        fields = [
-            "id",
-            "request",
-            "expert",
-            "due_date",
-            "service",
-            "charge",
-            "created_at",
-            "updated_at"
-        ]
+        fields = ["id", "request", "expert", "due_date", "service", "charge", "created_at", "updated_at"]
         read_only_fields = ("id", "request", "expert", "created_at", "updated_at")

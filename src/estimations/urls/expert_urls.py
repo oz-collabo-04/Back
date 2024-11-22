@@ -2,7 +2,7 @@ from django.urls import path
 
 from estimations.views.expert_views import (
     EstimationCreateByExpertAPIView,
-    EstimationUpdateByExpertAPIView
+    EstimationUpdateByExpertAPIView,
 )
 
 urlpatterns = [

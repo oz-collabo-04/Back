@@ -6,10 +6,11 @@ from common.permissions.expert_permissions import IsExpert
 from estimations.models import Estimation
 from estimations.serializers.expert_serializers import (
     EstimationCreateByExpertSerializer,
-    EstimationUpdateByExpertSerializer
+    EstimationUpdateByExpertSerializer,
 )
 
-@extend_schema(tags=['estimation-expert'])
+
+@extend_schema(tags=["estimation-expert"])
 class EstimationCreateByExpertAPIView(CreateAPIView):
     permission_classes = (IsAuthenticated, IsExpert)
     serializer_class = EstimationCreateByExpertSerializer
@@ -18,7 +19,7 @@ class EstimationCreateByExpertAPIView(CreateAPIView):
         serializer.save(expert=self.request.user.expert)
 
 
-@extend_schema(tags=['estimation-expert'])
+@extend_schema(tags=["estimation-expert"])
 class EstimationUpdateByExpertAPIView(UpdateAPIView):
     permission_class = (IsAuthenticated, IsExpert)
     serializer_class = EstimationUpdateByExpertSerializer
