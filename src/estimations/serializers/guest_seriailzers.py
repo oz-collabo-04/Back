@@ -4,7 +4,44 @@ from rest_framework import fields, serializers
 
 from common.constants.choices import SERVICE_CHOICES
 from estimations.models import Estimation, EstimationsRequest
-from expert.seriailzers import ExpertDetailSerializer
+from expert.models import Expert
+from expert.seriailzers import CareerSerializer
+from users.models import User
+
+
+class ExpertUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "name", "email", "phone_number", "gender"]
+        read_only_fields = ["id", "name", "email", "phone_number", "gender"]
+
+
+class EstimationExpertSerializer(serializers.ModelSerializer):
+    user = ExpertUserSerializer(read_only=True)
+    careers = CareerSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Expert
+        fields = (
+            "id",
+            "expert_image",
+            "service",
+            "standard_charge",
+            "appeal",
+            "available_location",
+            "user",
+            "careers",
+        )
+        read_only_fields = (
+            "id",
+            "expert_image",
+            "service",
+            "standard_charge",
+            "appeal",
+            "available_location",
+            "user",
+            "careers",
+        )
 
 
 class EstimationsRequestSerializer(serializers.ModelSerializer):
@@ -35,7 +72,7 @@ class EstimationsRequestSerializer(serializers.ModelSerializer):
 
 # 견적 리스트 조회
 class EstimationSerializer(serializers.ModelSerializer):
-    expert = ExpertDetailSerializer(read_only=True)
+    expert = EstimationExpertSerializer(read_only=True)
 
     class Meta:
         model = Estimation
@@ -50,15 +87,35 @@ class EstimationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "expert", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "request",
+            "expert",
+            "location",
+            "due_date",
+            "service",
+            "charge",
+            "created_at",
+            "updated_at",
+        ]
 
 
 # 견적 상세 조회
 class EstimationRetrieveSerializer(serializers.ModelSerializer):
-    expert = ExpertDetailSerializer(read_only=True)
+    expert = EstimationExpertSerializer(read_only=True)
     request = EstimationsRequestSerializer(read_only=True)
 
     class Meta:
         model = Estimation
         fields = ["id", "request", "expert", "location", "due_date", "service", "charge", "created_at", "updated_at"]
-        read_only_fields = ["id", "request", "expert", "service", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "request",
+            "expert",
+            "location",
+            "due_date",
+            "service",
+            "charge",
+            "created_at",
+            "updated_at",
+        ]
