@@ -116,24 +116,3 @@ class ExpertDetailSerializer(serializers.ModelSerializer):
         careers = instance.career_set.all()
         return CareerSerializer(careers, many=True).data
 
-
-# 고객의 요청 견적
-class EstimationsRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EstimationsRequest
-        fields = "__all__"
-        read_only_fields = ("id",)
-
-
-# 전문가가 받은 요청 견적 리스트 조회
-class RequestManagerSerializer(serializers.ModelSerializer):
-    request = EstimationsRequestSerializer()
-
-    class Meta:
-        model = RequestManager
-        fields = [
-            "id",
-            "expert",
-            "request",
-        ]
-        read_only_fields = ["id", "expert", "request"]
