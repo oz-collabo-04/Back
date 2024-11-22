@@ -12,20 +12,8 @@ from users.models import User
 class ExpertUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = [
-            "id",
-            "name",
-            "email",
-            "phone_number",
-            "gender"
-        ]
-        read_only_fields = [
-            "id",
-            "name",
-            "email",
-            "phone_number",
-            "gender"
-        ]
+        fields = ["id", "name", "email", "phone_number", "gender"]
+        read_only_fields = ["id", "name", "email", "phone_number", "gender"]
 
 
 class EstimationExpertSerializer(serializers.ModelSerializer):
@@ -119,17 +107,7 @@ class EstimationRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Estimation
-        fields = [
-            "id",
-            "request",
-            "expert",
-            "location",
-            "due_date",
-            "service",
-            "charge",
-            "created_at",
-            "updated_at"
-        ]
+        fields = ["id", "request", "expert", "location", "due_date", "service", "charge", "created_at", "updated_at"]
         read_only_fields = [
             "id",
             "request",
@@ -139,5 +117,5 @@ class EstimationRetrieveSerializer(serializers.ModelSerializer):
             "service",
             "charge",
             "created_at",
-            "updated_at"
+            "updated_at",
         ]
