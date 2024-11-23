@@ -13,8 +13,6 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from estimations.models import RequestManager
 from expert.models import Career, Expert
 from expert.seriailzers import (
     CareerSerializer,
