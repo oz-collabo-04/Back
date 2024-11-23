@@ -15,5 +15,3 @@ class UserInfoSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "name", "profile_image", "is_expert"]
         read_only_fields = ("id", "email")
-
-
