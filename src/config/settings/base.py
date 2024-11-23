@@ -147,6 +147,7 @@ NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me"
 # 카카오 oauth
 KAKAO_CALLBACK_URL = (
     "http://localhost/api/v1/users/login/kakao/callback/"  # 카카오 콜백 URL, 카카오 인증후 리디렉션될 URL
+    # "http://localhost:5173/login/google/callback/"
 )
 KAKAO_LOGIN_URL = (
     "https://kauth.kakao.com/oauth/authorize"  # 카카오 로그인 URL, 카카오 로그인 요청 URL,인증페이지로 이동
