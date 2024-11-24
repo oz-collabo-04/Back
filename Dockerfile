@@ -62,6 +62,7 @@ RUN poetry config virtualenvs.create false
 COPY pyproject.toml /app/pyproject.toml
 COPY poetry.lock /app/poetry.lock
 RUN /bin/bash -c "source ~/.bashrc && pyenv activate django-collabo && poetry install --no-root"
+ENV PYTHONPATH="/root/.pyenv/versions/django-collabo/lib/python3.12/site-packages:$PYTHONPATH"
 
 # 프로젝트 소스 복사
 COPY . /app
