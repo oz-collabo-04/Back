@@ -30,6 +30,3 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         # 알림 메시지를 클라이언트로 보냅니다
         notification = event["notification"]
         await self.send(text_data=json.dumps(notification))
-
-
-

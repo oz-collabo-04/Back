@@ -34,6 +34,6 @@ def estimation_post_save_handler(sender, instance, created, **kwargs):
                     - 결혼식장: {request.wedding_hall}
                     - 결혼식 예상 날짜: {request.wedding_datetime}
                 """,
-                notification_type='estimation_request',
-                is_read=False
+                notification_type="estimation_request",
+                is_read=False,
             )
