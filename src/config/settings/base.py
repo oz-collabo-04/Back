@@ -5,8 +5,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
+    # "localhost",
+    # "127.0.0.1",
+    # "default-oz-collabo-servi-18d66-100596032-ce8f2faf2e3d.kr.lb.naverncp.com",
+    "*",
 ]
 
 # Application definition
@@ -133,7 +135,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "so_new_api",
     "DESCRIPTION": "so_new_wedding",
     "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_INCLUDE_SCHEMA": True,
 }
 
 STATIC_URL = "/static/"
