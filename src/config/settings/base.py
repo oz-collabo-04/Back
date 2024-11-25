@@ -4,12 +4,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-ALLOWED_HOSTS = [
-    # "localhost",
-    # "127.0.0.1",
-    # "default-oz-collabo-servi-18d66-100596032-ce8f2faf2e3d.kr.lb.naverncp.com",
-    "*",
-]
 
 # Application definition
 DJANGO_APPS = [
@@ -39,7 +33,6 @@ THIRDPARTY_APPS = [
     "channels_redis",
     "storages",
     "rest_framework_simplejwt",
-    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_extensions",
     "multiselectfield",
@@ -135,7 +128,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "so_new_api",
     "DESCRIPTION": "so_new_wedding",
     "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": True,
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 STATIC_URL = "/static/"
@@ -145,13 +138,15 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # 네이버 oauth
-NAVER_CALLBACK_URL = "http://localhost:5173/login/naver/callback/"
+NAVER_CALLBACK_URL = "http://localhost/api/v1/users/login/naver/callback/"
 NAVER_LOGIN_URL = "https://nid.naver.com/oauth2.0/authorize"
 NAVER_TOKEN_URL = "https://nid.naver.com/oauth2.0/token"
 NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me"
 
 # 카카오 oauth
-KAKAO_CALLBACK_URL = "http://localhost:5173/login/kakao/callback/"  # 카카오 콜백 URL, 카카오 인증후 리디렉션될 URL
+KAKAO_CALLBACK_URL = (
+    "http://localhost/api/v1/users/login/kakao/callback/"  # 카카오 콜백 URL, 카카오 인증후 리디렉션될 URL
+)
 KAKAO_LOGIN_URL = (
     "https://kauth.kakao.com/oauth/authorize"  # 카카오 로그인 URL, 카카오 로그인 요청 URL,인증페이지로 이동
 )
@@ -164,6 +159,6 @@ KAKAO_USER_INFO_URL = (
 KAKAO_ACCESS_TOKEN_INFO_URL = "https://kapi.kakao.com/v1/user/access_token_info"  # 액세스 토큰 정보 확인 URL, 발급된 액세스 토큰의 유효성을 확인하기 위한 URL
 
 # 구글 oauth
-GOOGLE_REDIRECT_URI = "http://localhost:5173/login/google/callback/"
+GOOGLE_REDIRECT_URI = "http://localhost/api/v1/users/login/google/callback/"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"

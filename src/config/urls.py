@@ -17,7 +17,6 @@ urlpatterns = [
     path("api/v1/reviews/", include("reviews.urls")),
     path("api/v1/chat/", include("chat.urls")),
     path("api/v1/notifications/", include("notifications.urls")),
-    path("api/v1/services/", include("common.urls")),
 ]
 
 
