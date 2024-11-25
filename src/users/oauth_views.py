@@ -10,13 +10,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from users.models import User
+from users.seriailzers import UserInfoSerializer
+
+# Logger 설정
+logger = logging.getLogger(__name__)
 
 
 # #### 소셜 로그인 / 네이버, 카카오, 구글/
@@ -24,10 +24,14 @@ from users.models import User
 # 구글은 전화번호를 받아오지 않기때문에 이메일이 다르면 유저 중복생성을 막을 수가 없네?요..;.
 class NaverLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["oauth-back"],
+        tags=["Oauth-back"],
         parameters=[
-            OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY),
-            OpenApiParameter("state", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="네이버 인증 후 반환된 코드"
+            ),
+            OpenApiParameter(
+                "state", OpenApiTypes.STR, OpenApiParameter.QUERY, description="CSRF 공격 방지를 위한 상태 값"
+            ),
         ],
         responses={
             200: {
@@ -36,9 +40,52 @@ class NaverLoginCallbackAPIView(APIView):
                     "access_token": {
                         "type": "string",
                         "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp7...",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "네이버 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                            "is_expert": {
+                                "type": "boolean",
+                                "example": False,
+                                "description": "사용자가 전문가인지 여부",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 또는 state 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
                     }
                 },
-            }
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "네이버에서 액세스 토큰을 가져오는데 실패했습니다.",
+                        "description": "네이버 API 호출 실패",
+                    }
+                },
+                "description": "네이버 API 호출 실패 시",
+            },
         },
     )
     def get(self, request, *args, **kwargs):
@@ -65,16 +112,21 @@ class NaverLoginCallbackAPIView(APIView):
         # 애플리케이션용 액세스 토큰 생성
         access_token = str(AccessToken.for_user(user))
 
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", str(refresh), httponly=True, secure=True, samesite="Lax")
         return response
 
     @extend_schema(
         tags=["Oauth"],
         parameters=[
-            OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY),
-            OpenApiParameter("state", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="네이버 인증 후 반환된 코드"
+            ),
+            OpenApiParameter(
+                "state", OpenApiTypes.STR, OpenApiParameter.QUERY, description="CSRF 공격 방지를 위한 상태 값"
+            ),
         ],
         responses={
             200: {
@@ -83,9 +135,52 @@ class NaverLoginCallbackAPIView(APIView):
                     "access_token": {
                         "type": "string",
                         "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp7...",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "네이버 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                            "is_expert": {
+                                "type": "boolean",
+                                "example": False,
+                                "description": "사용자가 전문가인지 여부",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 또는 state 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
                     }
                 },
-            }
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "네이버에서 액세스 토큰을 가져오는데 실패했습니다.",
+                        "description": "네이버 API 호출 실패",
+                    }
+                },
+                "description": "네이버 API 호출 실패 시",
+            },
         },
     )
     def post(self, request, *args, **kwargs):
@@ -111,9 +206,9 @@ class NaverLoginCallbackAPIView(APIView):
         refresh = RefreshToken.for_user(user)
         # 애플리케이션용 액세스 토큰 생성
         access_token = str(AccessToken.for_user(user))
-
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", str(refresh), httponly=True, secure=True, samesite="Lax")
         return response
 
@@ -163,18 +258,65 @@ class NaverLoginCallbackAPIView(APIView):
 
 class KakaoLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["oauth-back"],
-        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        tags=["Oauth-back"],
+        parameters=[
+            OpenApiParameter(
+                "code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="카카오 인증 후 반환된 코드"
+            ),
+        ],
         responses={
             200: {
                 "type": "object",
                 "properties": {
                     "access_token": {
-                        "type": "array",
+                        "type": "string",
                         "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp3tyP7dHQoP0zNKHUq2gY",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "카카오 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                            "is_expert": {
+                                "type": "boolean",
+                                "example": False,
+                                "description": "사용자가 전문가인지 여부",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
                     }
                 },
-            }
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "카카오에서 액세스 토큰을 가져오는데 실패했습니다.",
+                        "description": "카카오 API 호출 실패",
+                    }
+                },
+                "description": "카카오 API 호출 실패 시",
+            },
         },
     )
     def get(self, request, *args, **kwargs):
@@ -200,24 +342,74 @@ class KakaoLoginCallbackAPIView(APIView):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
         return response
 
     @extend_schema(
         tags=["Oauth"],
-        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        request={
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "example": "AQAAAAAA1234", "description": "카카오 인증 후 반환된 코드"}
+            },
+            "required": ["code"],
+        },
         responses={
             200: {
                 "type": "object",
                 "properties": {
                     "access_token": {
-                        "type": "array",
+                        "type": "string",
                         "example": "c8ceMEjfnorlQwEisqemfpM1Wzw7aGp7JnipglQipkOn5Zp3tyP7dHQoP0zNKHUq2gY",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "카카오 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                            "is_expert": {
+                                "type": "boolean",
+                                "example": False,
+                                "description": "사용자가 전문가인지 여부",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
                     }
                 },
-            }
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "카카오에서 액세스 토큰을 가져오는데 실패했습니다.",
+                        "description": "카카오 API 호출 실패",
+                    }
+                },
+                "description": "카카오 API 호출 실패 시",
+            },
         },
     )
     def post(self, request, *args, **kwargs):
@@ -243,8 +435,9 @@ class KakaoLoginCallbackAPIView(APIView):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
         return response
 
@@ -315,10 +508,60 @@ class KakaoLoginCallbackAPIView(APIView):
 
 class GoogleLoginCallbackAPIView(APIView):
     @extend_schema(
-        tags=["oauth-back"],
-        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        tags=["Oauth-back"],
+        parameters=[
+            OpenApiParameter(
+                "code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Google 인증 후 반환된 코드"
+            ),
+        ],
         responses={
-            200: {"type": "object", "properties": {"access_token": {"type": "string", "example": "ya29.a0AfH6SMC..."}}}
+            200: {
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "example": "ya29.a0AfH6SMC...",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "Google 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
+                    }
+                },
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "Google에서 액세스 토큰을 가져오는 데 실패했습니다.",
+                        "description": "Google API 호출 실패",
+                    }
+                },
+                "description": "Google API 호출 실패 시",
+            },
         },
     )
     def get(self, request, *args, **kwargs):
@@ -345,16 +588,69 @@ class GoogleLoginCallbackAPIView(APIView):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
         return response
 
     @extend_schema(
         tags=["Oauth"],
-        parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+        request={
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "example": "AQAAAAAA1234", "description": "Google 인증 후 반환된 코드"}
+            },
+            "required": ["code"],
+        },
         responses={
-            200: {"type": "object", "properties": {"access_token": {"type": "string", "example": "ya29.a0AfH6SMC..."}}}
+            200: {
+                "type": "object",
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "example": "ya29.a0AfH6SMC...",
+                        "description": "애플리케이션에서 사용되는 액세스 토큰",
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "example": 1, "description": "사용자 ID"},
+                            "email": {"type": "string", "example": "user@example.com", "description": "사용자 이메일"},
+                            "name": {"type": "string", "example": "Google 사용자", "description": "사용자 이름"},
+                            "profile_image": {
+                                "type": "string",
+                                "example": "https://example.com/profile.jpg",
+                                "description": "사용자 프로필 이미지",
+                            },
+                        },
+                        "description": "사용자 정보",
+                    },
+                },
+                "description": "로그인 성공 시 반환되는 액세스 토큰 및 사용자 정보",
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "잘못된 code 매개변수입니다.",
+                        "description": "요청 파라미터가 잘못되었을 경우",
+                    }
+                },
+                "description": "클라이언트의 잘못된 요청",
+            },
+            403: {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string",
+                        "example": "Google에서 액세스 토큰을 가져오는 데 실패했습니다.",
+                        "description": "Google API 호출 실패",
+                    }
+                },
+                "description": "Google API 호출 실패 시",
+            },
         },
     )
     def post(self, request, *args, **kwargs):
@@ -381,8 +677,9 @@ class GoogleLoginCallbackAPIView(APIView):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
+        user_data = UserInfoSerializer(user).data
         # 액세스 토큰을 응답 본문에 반환하고 리프레시 토큰을 쿠키로 설정
-        response = Response({"access_token": access_token}, status=status.HTTP_200_OK)
+        response = Response({"access_token": access_token, "user": user_data}, status=status.HTTP_200_OK)
         response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
         return response
 
@@ -434,10 +731,6 @@ class GoogleLoginCallbackAPIView(APIView):
         user.save()
 
         return user
-
-
-# Logger 설정
-logger = logging.getLogger(__name__)
 
 
 #### 로그아웃
@@ -549,18 +842,24 @@ class LogoutView(APIView):
 class RefreshAccessTokenAPIView(APIView):
     """
     쿠키에 저장된 리프레시 토큰을 검증하여
-    새 액세스 토큰을 발급하거나 401 오류를 반환하는 API.
+    새 액세스 토큰을 발급하거나 기존 액세스 토큰이 유효하면 에러를 반환.
     """
 
     @extend_schema(
         tags=["Oauth"],
         summary="리프레시 토큰 검증 -> 새 액세스 토큰 재발급",
         responses={
-            200: {
+            201: {
                 "type": "object",
                 "properties": {
                     "detail": {"type": "string", "example": "새로운 액세스 토큰이 발급되었습니다."},
                     "access_token": {"type": "string", "example": "new_access_token_example"},
+                },
+            },
+            400: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string", "example": "기존 액세스 토큰이 유효합니다."},
                 },
             },
             401: {
@@ -569,25 +868,38 @@ class RefreshAccessTokenAPIView(APIView):
                     "detail": {"type": "string", "example": "유효하지 않거나 만료된 리프레시 토큰입니다."},
                 },
             },
-            400: {
-                "type": "object",
-                "properties": {
-                    "detail": {"type": "string", "example": "리프레시 토큰이 제공되지 않았습니다."},
-                },
-            },
         },
     )
     def post(self, request, *args, **kwargs):
         """
-        POST 요청으로 쿠키에 저장된 리프레시 토큰 검증 후 새로운 액세스 토큰 발급.
+        POST 요청으로 액세스 토큰 상태 확인 후 새 액세스 토큰 발급.
         """
+        # Authorization 헤더에서 액세스 토큰 가져오기
+        auth_header = request.headers.get("Authorization")
+        access_token = None
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+
+        # 액세스 토큰 검증
+        if access_token:
+            try:
+                AccessToken(access_token)
+                logger.info("기존 액세스 토큰이 유효합니다.")
+                return Response(
+                    {"detail": "기존 액세스 토큰이 유효합니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except TokenError:
+                logger.info("액세스 토큰이 만료되었습니다. 리프레시 토큰 검증을 진행합니다.")
+                pass  # 만료된 경우 리프레시 토큰 검증으로 진행
+
         # 쿠키에서 리프레시 토큰 가져오기
         refresh_token = request.COOKIES.get("refresh_token")
         if not refresh_token:
             logger.warning("리프레시 토큰이 제공되지 않았습니다.")
             return Response(
                 {"detail": "리프레시 토큰이 제공되지 않았습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         try:
@@ -601,7 +913,7 @@ class RefreshAccessTokenAPIView(APIView):
                     "detail": "새로운 액세스 토큰이 발급되었습니다.",
                     "access_token": new_access_token,
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
         except TokenError as e:
             logger.warning("유효하지 않거나 만료된 리프레시 토큰: %s", str(e))
