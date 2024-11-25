@@ -37,7 +37,6 @@ RUN curl https://pyenv.run | bash
 # pyenv 환경 변수 설정
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
-ENV PYTHONPATH="/root/.pyenv/versions/django-collabo/lib/python3.12/site-packages:$PYTHONPATH"
 
 # pyenv 및 pyenv-virtualenv 초기화
 RUN echo 'export PYENV_ROOT="/root/.pyenv"' >> ~/.bashrc
