@@ -31,6 +31,6 @@ def estimation_post_save_handler(sender, instance, created, **kwargs):
             
             - 견적 예상 금액: {estimation.charge}
             """,
-            notification_type='estimation',
-            is_read=False
+            notification_type="estimation",
+            is_read=False,
         )

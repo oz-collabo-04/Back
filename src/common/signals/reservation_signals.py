@@ -1,9 +1,9 @@
+from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django_redis import get_redis_connection
-from notifications.models import Notification
-from channels.layers import get_channel_layer
 
+from notifications.models import Notification
 from reservations.models import Reservation
 
 channel_layer = get_channel_layer()
@@ -28,6 +28,6 @@ def estimation_post_save_handler(sender, instance, created, **kwargs):
             
             - 견적 금액: {reservation.estimation.charge}
             """,
-            notification_type='reserved',
-            is_read=False
+            notification_type="reserved",
+            is_read=False,
         )

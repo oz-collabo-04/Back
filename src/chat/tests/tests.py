@@ -1,18 +1,20 @@
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.timezone import make_aware
-from datetime import datetime
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from chat.models import ChatRoom, Message
 from expert.models import Expert
+
 User = get_user_model()
 
 
-
 from estimations.models import EstimationsRequest
+
 
 class ChatAPITestCase(TestCase):
     def setUp(self):
@@ -138,4 +140,3 @@ class ChatAPITestCase(TestCase):
         # Then: 메시지 생성 확인
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Message.objects.filter(content="새로운 메시지입니다!").exists())
-
