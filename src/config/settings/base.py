@@ -5,9 +5,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "default-oz-collabo-servi-18d66-100596032-ce8f2faf2e3d.kr.lb.naverncp.com",
+    # "localhost",
+    # "127.0.0.1",
+    # "default-oz-collabo-servi-18d66-100596032-ce8f2faf2e3d.kr.lb.naverncp.com",
+    "*",
 ]
 
 # Application definition

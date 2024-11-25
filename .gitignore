@@ -197,4 +197,4 @@ pyrightconfig.json
 *.env
 /scripts/.coverage
 
-kubeconfig.yaml
+kubernetes/kubeconfig.yaml
