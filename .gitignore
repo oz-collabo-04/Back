@@ -196,5 +196,3 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,django,database,dotenv
 *.env
 /scripts/.coverage
-
-kubernetes/kubeconfig.yaml
