@@ -16,10 +16,10 @@ SECRET_KEY = ENV.get(
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": ENV.get("POSTGRES_HOST", "localhost"),
+        "HOST": ENV.get("POSTGRES_HOST", "db"),
         "USER": ENV.get("POSTGRES_USER", "postgres"),
         "PASSWORD": ENV.get("POSTGRES_PASSWORD", "postgres"),
-        "NAME": ENV.get("POSTGRES_DBNAME", "postgres"),
+        "NAME": ENV.get("POSTGRES_DBNAME", "oz_collabo"),
         "PORT": ENV.get("POSTGRES_PORT", 5432),
     }
 }
