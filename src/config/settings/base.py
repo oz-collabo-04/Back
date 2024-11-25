@@ -143,15 +143,13 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # 네이버 oauth
-NAVER_CALLBACK_URL = "http://localhost/api/v1/users/login/naver/callback/"
+NAVER_CALLBACK_URL = "http://localhost:5173/login/naver/callback/"
 NAVER_LOGIN_URL = "https://nid.naver.com/oauth2.0/authorize"
 NAVER_TOKEN_URL = "https://nid.naver.com/oauth2.0/token"
 NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me"
 
 # 카카오 oauth
-KAKAO_CALLBACK_URL = (
-    "http://localhost/api/v1/users/login/kakao/callback/"  # 카카오 콜백 URL, 카카오 인증후 리디렉션될 URL
-)
+KAKAO_CALLBACK_URL = "http://localhost:5173/login/kakao/callback/"  # 카카오 콜백 URL, 카카오 인증후 리디렉션될 URL
 KAKAO_LOGIN_URL = (
     "https://kauth.kakao.com/oauth/authorize"  # 카카오 로그인 URL, 카카오 로그인 요청 URL,인증페이지로 이동
 )
@@ -164,6 +162,6 @@ KAKAO_USER_INFO_URL = (
 KAKAO_ACCESS_TOKEN_INFO_URL = "https://kapi.kakao.com/v1/user/access_token_info"  # 액세스 토큰 정보 확인 URL, 발급된 액세스 토큰의 유효성을 확인하기 위한 URL
 
 # 구글 oauth
-GOOGLE_REDIRECT_URI = "http://localhost/api/v1/users/login/google/callback/"
+GOOGLE_REDIRECT_URI = "http://localhost:5173/login/google/callback/"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
