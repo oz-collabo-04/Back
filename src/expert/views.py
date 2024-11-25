@@ -6,15 +6,12 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import (
     CreateAPIView,
-    DestroyAPIView,
     ListAPIView,
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from estimations.models import RequestManager
 from expert.models import Career, Expert
 from expert.seriailzers import (
     CareerSerializer,
