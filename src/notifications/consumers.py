@@ -32,22 +32,4 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(notification))
 
 
-# Django signal을 사용하여 Notification 객체가 생성될 때 웹소켓으로 알림을 전달
-@receiver(post_save, sender=Notification)
-def send_notification_signal(sender, instance, created, **kwargs):
-    if created:
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notification_{instance.receiver.id}",
-            {
-                "type": "send_notification",
-                "notification": {
-                    "id": instance.id,
-                    "title": instance.title,
-                    "message": instance.message,
-                    "notification_type": instance.notification_type,
-                    "is_read": instance.is_read,
-                    "created_at": instance.created_at,
-                },
-            },
-        )
+

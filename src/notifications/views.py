@@ -65,8 +65,4 @@ class NotificationReadAllAPIView(generics.UpdateAPIView):
         user = request.user
         notifications = Notification.objects.filter(receiver_id=user.id, is_read=False)
         notifications.update(is_read=True)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notification_{user.id}", {"type": "send_notification", "message": "전체 알림이 읽음 처리되었습니다."}
-        )
         return Response({"detail": "전체 알림이 읽음 처리되었습니다."}, status=status.HTTP_200_OK)

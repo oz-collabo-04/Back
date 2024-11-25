@@ -16,9 +16,15 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         return data
 
     def validate_user(self, data):
-        user = data.get("user")
+        # 유효성 검사에서 data가 딕셔너리인지 확인
+        if isinstance(data, dict):
+            user = data.get("user")
+        else:
+            user = data  # 이미 객체인 경우
+
         if not user:
-            raise serializers.ValidationError("유저 정보는 필수입니다.")
+            raise serializers.ValidationError("User 정보가 필요합니다.")
+        return user
 
     def validate_expert(self, data):
         expert = data.get("expert")
