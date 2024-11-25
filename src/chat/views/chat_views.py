@@ -29,7 +29,8 @@ class ChatRoomListCreateAPIView(generics.ListCreateAPIView):
             return ChatRoom.objects.filter(user=user)
         elif status_filter in valid_statuses:
             estimation_requests = EstimationsRequest.objects.filter(status=status_filter, user=user)
-            return ChatRoom.objects.filter(estimation_request__in=estimation_requests, user=user)
+            if estimation_requests.exists():
+                return ChatRoom.objects.filter(user=user)
         else:
             return ChatRoom.objects.none()
 
