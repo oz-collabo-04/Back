@@ -3,7 +3,7 @@ from rest_framework import serializers
 from estimations.models import Estimation
 from expert.models import Expert
 from reservations.models import Reservation
-from users.models import User  # 사용자 모델 위치 확인 필요
+from users.models import User
 
 
 class UserInfoSerializer(serializers.ModelSerializer):  # 사용자 정보를 직렬화
@@ -56,3 +56,20 @@ class ReservationCreateSerializer(serializers.ModelSerializer):
         model = Reservation
         fields = ("id", "status", "estimation", "estimation_id", "created_at", "updated_at")
         read_only_fields = ("id", "status", "estimation", "created_at", "updated_at")
+
+
+class ExpertReservationInfoSerializer(serializers.ModelSerializer):
+    estimation = EstimationInfoSerializer(read_only=True)
+    guest_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Reservation
+        fields = ("id", "status", "estimation", "guest_info", "created_at", "updated_at")
+        read_only_fields = ("id", "estimation", "created_at", "updated_at")
+
+    def get_guest_info(self, obj):
+        # estimation을 통해 요청한 게스트 정보 반환
+        if obj.estimation and obj.estimation.request and obj.estimation.request.user:
+            user = obj.estimation.request.user
+            return {"id": user.id, "name": user.name, "email": user.email, "phone_number": user.phone_number}
+        return None

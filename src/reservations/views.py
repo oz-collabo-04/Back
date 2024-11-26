@@ -5,8 +5,10 @@ from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from common.permissions.expert_permissions import IsExpert
 from reservations.models import Reservation
 from reservations.seriailzers import (
+    ExpertReservationInfoSerializer,
     ReservationCreateSerializer,
     ReservationInfoSerializer,
 )
@@ -28,6 +30,7 @@ class ReservationListAPIView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
+
 class ReservationCreateAPIView(generics.CreateAPIView):
     queryset = Reservation.objects.all().prefetch_related(
         "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
@@ -42,6 +45,7 @@ class ReservationCreateAPIView(generics.CreateAPIView):
     )
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
 
 class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMixin, UpdateModelMixin):
     queryset = Reservation.objects.all().prefetch_related(
@@ -80,3 +84,26 @@ class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMix
     )
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+
+class ExpertReservationListAPIView(generics.ListAPIView):
+    serializer_class = ExpertReservationInfoSerializer
+    permission_classes = [IsExpert]
+
+    def get_queryset(self):
+        expert = self.request.user.expert
+        return Reservation.objects.filter(estimation__expert=expert).prefetch_related(
+            "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
+        )
+
+
+class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = ExpertReservationInfoSerializer
+    permission_classes = [IsExpert]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        expert = self.request.user.expert
+        return Reservation.objects.filter(estimation__expert=expert).prefetch_related(
+            "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
+        )
