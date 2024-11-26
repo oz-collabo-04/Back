@@ -11,10 +11,6 @@ cd src
 echo "Applying database migrations..."
 python manage.py migrate --no-input
 
-# 각 모델에 대한 더미 데이터 생성
-echo "Generating Dummy Data..."
-python manage.py generate_dummy
-
 # 정적 파일 수집
 echo "Collecting static files..."
 python manage.py collectstatic --no-input

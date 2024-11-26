@@ -4,7 +4,6 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from estimations.models import Estimation, EstimationsRequest, RequestManager
 from expert.models import Career, Expert
 
 
@@ -115,25 +114,3 @@ class ExpertDetailSerializer(serializers.ModelSerializer):
         # `career_set`은 ForeignKey의 기본 역참조 이름
         careers = instance.career_set.all()
         return CareerSerializer(careers, many=True).data
-
-
-# 고객의 요청 견적
-class EstimationsRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EstimationsRequest
-        fields = "__all__"
-        read_only_fields = ("id",)
-
-
-# 전문가가 받은 요청 견적 리스트 조회
-class RequestManagerSerializer(serializers.ModelSerializer):
-    request = EstimationsRequestSerializer()
-
-    class Meta:
-        model = RequestManager
-        fields = [
-            "id",
-            "expert",
-            "request",
-        ]
-        read_only_fields = ["id", "expert", "request"]
