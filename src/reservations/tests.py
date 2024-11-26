@@ -120,3 +120,20 @@ class ReservationTestCase(APITestCase):
         response = self.client.patch(url, data=data, headers={"Authorization": f"Bearer {self.access}"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], data["status"])
+
+    def test_expert_reservation_list(self):
+        """Expert의 예약 리스트 조회 테스트"""
+        url = reverse("expert-reservation-list", kwargs={"review_id": self.review.id})
+        response = self.client.get(url, headers={"Authorization": f"Bearer {self.access}"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_expert_reservation_detail(self):
+        """Expert의 예약 상세 조회 테스트"""
+        url = reverse("expert-reservation-detail", kwargs={"id": self.reservation.id})
+        response = self.client.get(url, headers={"Authorization": f"Bearer {self.access}"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.reservation.id)
+        self.assertEqual(response.data["status"], "pending")

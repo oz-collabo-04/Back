@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 SERVICE_CHOICES = [
     ("mc", "MC"),
     ("snap", "스냅"),
@@ -87,16 +89,16 @@ RESERVATION_STATUS_CHOICES = [
 ]
 
 RATING_CHOICES = [
-    (0.5, 0.5),
-    (1, 1),
-    (1.5, 1.5),
-    (2, 2),
-    (2.5, 2.5),
-    (3, 3),
-    (3.5, 3.5),
-    (4, 4),
-    (4.5, 4.5),
-    (5, 5),
+    (Decimal("0.5"), "zero_point_five"),
+    (Decimal("1.0"), "one"),
+    (Decimal("1.5"), "one_point_five"),
+    (Decimal("2.0"), "two"),
+    (Decimal("2.5"), "two_point_five"),
+    (Decimal("3.0"), "three"),
+    (Decimal("3.5"), "three_point_five"),
+    (Decimal("4.0"), "four"),
+    (Decimal("4.5"), "four_point_five"),
+    (Decimal("5.0"), "five"),
 ]
 
 NOTIFICATION_TYPE_CHOICES = [
