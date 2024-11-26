@@ -45,9 +45,6 @@ class Command(BaseCommand):
         # 6.새로운 Booking 데이터 생성
         self.create_reviews(fake)
 
-        # 7. 슈퍼유저 생성
-        self.create_superuser(fake)
-
         print("All data generated successfully.")
 
     def create_superuser(self, fake):
@@ -63,6 +60,7 @@ class Command(BaseCommand):
             is_superuser=True,
             is_active=True,
             is_staff=True,
+            is_expert=True,
         )
 
         Expert.objects.create(
@@ -78,7 +76,7 @@ class Command(BaseCommand):
 
     def create_expert_users(self, fake):
         print("Creating Expert profiles...")
-        for i in range(1, 20):
+        for i in range(1, 50):
             expert_user = User.objects.create_user(
                 email=f"{fake.first_name() + str(random.randint(1, 999))}@naver.com",
                 name=fake.name(),
@@ -86,6 +84,7 @@ class Command(BaseCommand):
                 gender=random.choice(GENDER_CHOICES)[0],
                 profile_image=fake.image_url(width=200, height=200),
                 is_active=True,
+                is_expert=True,
             )
 
             expert = Expert.objects.create(
@@ -125,7 +124,7 @@ class Command(BaseCommand):
     def create_guest_users(self, fake):
         print("Creating Guest Users...")
 
-        for i in range(1, 20):
+        for i in range(1, 50):
             guest_user = User.objects.create_user(
                 email=f"{fake.first_name() + str(random.randint(1, 999))}@naver.com",
                 name=fake.name(),
