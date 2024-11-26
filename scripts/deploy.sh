@@ -18,15 +18,16 @@ docker tag stop.kr.ncr.ntruss.com/oz-collabo-repo stop.kr.ncr.ntruss.com/oz-coll
 docker push stop.kr.ncr.ntruss.com/oz-collabo-repo
 
 cd kubernetes
+ncp-iam-authenticator create-kubeconfig --region KR --clusterUuid d3c299b3-a6ca-4db8-9c5e-d0138a4d6e3d --output kubeconfig.yaml
 
 KUBECONFIG_PATH=$(realpath kubeconfig.yaml)
 export KUBECONFIG=$KUBECONFIG_PATH
-
 kubectl create secret docker-registry amuguna \
   --docker-server=stop.kr.ncr.ntruss.com \
   --docker-username=$DOCKER_USERNAME \
   --docker-password=$DOCKER_PASSWORD \
   --docker-email=$DOCKER_EMAIL
+
 
 kubectl apply -f django_deployment.yaml
 
