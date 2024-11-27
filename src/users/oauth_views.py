@@ -313,24 +313,12 @@ class GoogleLoginCallbackAPIView(APIView):
             if not email:
                 raise BadRequestException("사용자 이메일이 제공되지 않았습니다.", code="missing_email")
 
-            # 이메일로 기존 유저 검색
-            user = User.objects.filter(email=email).first()
-            if user:
-                # 기존 유저 정보 업데이트
-                user.name = name or user.name
-                user.profile_image = profile_image or user.profile_image
-                user.is_active = True
-                user.save()
-                logger.info(f"기존 유저 업데이트: {email}")
-            else:
-                # 새로운 유저 생성
-                user = User.objects.create(
-                    email=email,
-                    name=name,
-                    profile_image=profile_image,
-                )
-                logger.info(f"새 유저 생성: {email}")
+            user, created = User.objects.get_or_create(email=email)
+            user.name = name
+            user.profile_image = profile_image
+            user.save()
             return user
+
         except Exception as e:
             logger.error(f"유저 생성 또는 업데이트 중 오류 발생: {str(e)}")
             raise InternalServerException(
