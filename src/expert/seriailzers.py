@@ -4,6 +4,7 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.constants.choices import AREA_CHOICES, SERVICE_CHOICES
 from expert.models import Career, Expert
 
 
@@ -18,6 +19,8 @@ class CareerSerializer(serializers.ModelSerializer):
 class ExpertCreateSerializer(serializers.ModelSerializer):
     # 입력만을 위한 필드
     careers = serializers.CharField(write_only=True)
+    available_location = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
 
     class Meta:
         model = Expert
@@ -35,6 +38,21 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
             "user",
             "id",
         )
+
+    def get_service(self, obj):
+        """
+        service 필드의 키 값을 한글로 변환하여 반환합니다.
+        """
+        return dict(SERVICE_CHOICES).get(obj.service, obj.service)
+
+    def get_available_location(self, obj):
+        """
+        available_location 필드는 AREA_CHOICES 키에 해당하는 값을 반환합니다.
+        """
+        if obj.available_location:
+            mapped_locations = [dict(AREA_CHOICES).get(location, location) for location in obj.available_location]
+            return mapped_locations
+        return []
 
     # careers 필드의 데이터 유효성 검증
     def validate_careers(self, value):
@@ -80,6 +98,8 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
 class ExpertDetailSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     careers = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
+    available_location = serializers.SerializerMethodField()
 
     class Meta:
         model = Expert
@@ -97,6 +117,21 @@ class ExpertDetailSerializer(serializers.ModelSerializer):
             "user",
             "id",
         )
+
+    def get_service(self, obj):
+        """
+        service 필드의 키 값을 한글로 변환하여 반환합니다.
+        """
+        return dict(SERVICE_CHOICES).get(obj.service, obj.service)
+
+    def get_available_location(self, obj):
+        """
+        available_location 필드는 AREA_CHOICES 키에 해당하는 값을 반환합니다.
+        """
+        if obj.available_location:
+            mapped_locations = [dict(AREA_CHOICES).get(location, location) for location in obj.available_location]
+            return mapped_locations
+        return []
 
     @extend_schema_field(serializers.CharField)
     def get_user(self, instance):
