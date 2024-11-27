@@ -8,9 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+from common.exceptions import CustomAPIException
 from users.models import User
 from users.seriailzers import UserInfoSerializer
-from common.exceptions import CustomAPIException
 
 
 # #### 소셜 로그인 / 네이버, 카카오, 구글/
@@ -19,8 +20,12 @@ class NaverLoginCallbackAPIView(APIView):
         tags=["Oauth"],
         summary="네이버 서버인증, 액세스, 리프레시 토큰발급, 유저생성",
         parameters=[
-            OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="네이버 인증 후 반환된 코드"),
-            OpenApiParameter("state", OpenApiTypes.STR, OpenApiParameter.QUERY, description="CSRF 공격 방지를 위한 상태 값"),
+            OpenApiParameter(
+                "code", OpenApiTypes.STR, OpenApiParameter.QUERY, description="네이버 인증 후 반환된 코드"
+            ),
+            OpenApiParameter(
+                "state", OpenApiTypes.STR, OpenApiParameter.QUERY, description="CSRF 공격 방지를 위한 상태 값"
+            ),
         ],
         responses={
             200: {"type": "object", "description": "로그인 성공"},
@@ -72,7 +77,9 @@ class NaverLoginCallbackAPIView(APIView):
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(settings.NAVER_USER_INFO_URL, headers=headers)
         if response.status_code != 200:
-            raise CustomAPIException("네이버에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed")
+            raise CustomAPIException(
+                "네이버에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed"
+            )
         return response.json()
 
     def create_or_update_user(self, user_info):
@@ -155,7 +162,9 @@ class KakaoLoginCallbackAPIView(APIView):
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(settings.KAKAO_USER_INFO_URL, headers=headers)
         if response.status_code != 200:
-            raise CustomAPIException("카카오에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed")
+            raise CustomAPIException(
+                "카카오에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed"
+            )
         return response.json()
 
     def create_or_update_user(self, user_info):
@@ -243,7 +252,9 @@ class GoogleLoginCallbackAPIView(APIView):
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(settings.GOOGLE_USER_INFO_URL, headers=headers)
         if response.status_code != 200:
-            raise CustomAPIException("Google에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed")
+            raise CustomAPIException(
+                "Google에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed"
+            )
         return response.json()
 
     def create_or_update_user(self, user_info):
@@ -279,7 +290,9 @@ class LogoutView(APIView):
         if not auth_header:
             raise CustomAPIException("Authorization 헤더가 누락되었습니다.", code="missing_authorization_header")
         if not auth_header.startswith("Bearer "):
-            raise CustomAPIException("유효하지 않은 Authorization 헤더 형식입니다.", code="invalid_authorization_format")
+            raise CustomAPIException(
+                "유효하지 않은 Authorization 헤더 형식입니다.", code="invalid_authorization_format"
+            )
 
         access_token = auth_header.split(" ")[1]
         refresh_token = request.COOKIES.get("refresh_token")
@@ -322,6 +335,9 @@ class RefreshAccessTokenAPIView(APIView):
         try:
             refresh = RefreshToken(refresh_token)
             new_access_token = str(refresh.access_token)
-            return Response({"detail": "새로운 액세스 토큰이 발급되었습니다.", "access_token": new_access_token}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"detail": "새로운 액세스 토큰이 발급되었습니다.", "access_token": new_access_token},
+                status=status.HTTP_201_CREATED,
+            )
         except TokenError:
             raise CustomAPIException("유효하지 않거나 만료된 리프레시 토큰입니다.", code="invalid_refresh_token")
