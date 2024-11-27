@@ -1,10 +1,10 @@
 from decimal import Decimal
 
 SERVICE_CHOICES = [
-    ("mc", "MC"),
-    ("snap", "스냅"),
-    ("singer", "가수"),
-    ("video", "영상"),
+    ("mc", "결혼식 사회자"),
+    ("snap", "스냅 촬영"),
+    ("singer", "축가 가수"),
+    ("video", "영상 촬영"),
 ]
 
 AREA_CHOICES = [
