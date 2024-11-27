@@ -1,9 +1,8 @@
-import json
-
 from django.db import transaction
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.constants.choices import AREA_CHOICES, SERVICE_CHOICES
 from expert.models import Career, Expert
 
 
@@ -13,11 +12,11 @@ class CareerSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "description", "start_date", "end_date"]
 
 
-# 전문가 생성 시리얼라이저
-# 전문가 생성되면서 경력사항이 같이 생성되야해서 transaction사용
-class ExpertCreateSerializer(serializers.ModelSerializer):
-    # 입력만을 위한 필드
-    careers = serializers.CharField(write_only=True)
+class ExpertSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    careers = CareerSerializer(many=True)
+    service_display = serializers.SerializerMethodField()
+    available_location_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Expert
@@ -26,9 +25,11 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
             "id",
             "expert_image",
             "service",
+            "service_display",
             "standard_charge",
             "appeal",
             "available_location",
+            "available_location_display",
             "careers",
         ]
         read_only_fields = (
@@ -36,24 +37,63 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
             "id",
         )
 
-    # careers 필드의 데이터 유효성 검증
+    @extend_schema_field(
+        {
+            "type": "object",
+            "properties": {"id": {"type": "integer"}, "name": {"type": "string"}, "gender": {"type": "string"}},
+        }
+    )
+    def get_user(self, instance):
+        """
+        전문가와 연관된 사용자 정보를 반환합니다.
+        """
+        user = instance.user
+        return {
+            "id": user.id,
+            "name": user.name,
+            "gender": user.gender,
+        }
+
+    @extend_schema_field({"type": "string", "example": "결혼식 사회자"})
+    def get_service_display(self, obj):
+        """
+        service 필드의 키 값을 한글로 변환하여 반환합니다.
+        """
+        return dict(SERVICE_CHOICES).get(obj.service, obj.service)
+
+    @extend_schema_field({"type": "array", "items": {"type": "string", "example": "서울특별시"}})
+    def get_available_location_display(self, obj):
+        """
+        available_location 필드는 AREA_CHOICES 키에 해당하는 값을 반환합니다.
+        """
+        if obj.available_location:
+            mapped_locations = [dict(AREA_CHOICES).get(location, location) for location in obj.available_location]
+            return mapped_locations
+        return []
+
+    @extend_schema_field(serializers.ListSerializer(child=CareerSerializer()))
+    def get_careers(self, instance):
+        """
+        전문가와 연결된 모든 Career 객체를 반환합니다.
+        """
+        careers = instance.career_set.all()
+        return CareerSerializer(careers, many=True).data
+
     def validate_careers(self, value):
-        # careers 필드가 JSON 문자열로 전달될 경우 처리
-        if isinstance(value, str):
-            try:
-                parsed = json.loads(value)
-            except json.JSONDecodeError:
-                raise serializers.ValidationError("careers 데이터는 올바른 JSON 형식이어야 합니다.")
-            if not isinstance(parsed, list):
-                raise serializers.ValidationError("careers 데이터는 딕셔너리 리스트여야 합니다.")
-            for item in parsed:
-                if not isinstance(item, dict):
-                    raise serializers.ValidationError("careers 리스트의 각 항목은 딕셔너리여야 합니다.")
-            return parsed
-        raise serializers.ValidationError("careers 필드의 데이터 형식이 잘못되었습니다. JSON 문자열이어야 합니다.")
+        """
+        careers 필드의 데이터 유효성 검증.
+        """
+        if not isinstance(value, list):
+            raise serializers.ValidationError("careers 데이터는 딕셔너리 리스트여야 합니다.")
+        for item in value:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError("careers 리스트의 각 항목은 딕셔너리여야 합니다.")
+        return value
 
     def create(self, validated_data):
-        # careers 데이터를 처리
+        """
+        전문가 생성 시 경력사항을 함께 생성하기 위해 transaction 사용.
+        """
         careers_data = validated_data.pop("careers", [])
         user = self.context["request"].user
         validated_data.pop("user", None)  # user 필드 제거
@@ -71,46 +111,3 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
             # 사용자 상태를 전문가로 설정
             user.is_expert = True
             user.save()
-
-        return expert
-
-
-# 디테일 추가 예정 - 별점 등..
-# 전문가 디테일 페이지
-class ExpertDetailSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-    careers = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Expert
-        fields = [
-            "user",
-            "id",
-            "expert_image",
-            "service",
-            "standard_charge",
-            "appeal",
-            "available_location",
-            "careers",
-        ]
-        read_only_fields = (
-            "user",
-            "id",
-        )
-
-    @extend_schema_field(serializers.CharField)
-    def get_user(self, instance):
-        # `instance.user`를 통해 관련 사용자 정보를 가져옵니다.
-        user = instance.user
-        return {
-            "id": user.id,
-            "name": user.name,
-            "gender": user.gender,
-        }
-
-    @extend_schema_field(serializers.ListSerializer(child=CareerSerializer()))
-    def get_careers(self, instance):
-        # 역참조를 통해 관련 Career 객체를 가져옴
-        # `career_set`은 ForeignKey의 기본 역참조 이름
-        careers = instance.career_set.all()
-        return CareerSerializer(careers, many=True).data

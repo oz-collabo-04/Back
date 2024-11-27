@@ -113,6 +113,7 @@ class NaverLoginCallbackAPIView(APIView):
             user.profile_image = profile_image or user.profile_image
             if phone_number:
                 user.phone_number = phone_number
+            user.is_active = True
         else:
             user = User(email=email, name=name, profile_image=profile_image, phone_number=phone_number)
 
@@ -215,6 +216,7 @@ class KakaoLoginCallbackAPIView(APIView):
             user.profile_image = profile_image or user.profile_image
             if phone_number:
                 user.phone_number = phone_number
+            user.is_active = True
         else:
             user = User(email=email, name=name, profile_image=profile_image, phone_number=phone_number)
 
@@ -298,6 +300,11 @@ class GoogleLoginCallbackAPIView(APIView):
         return response.json()
 
     def create_or_update_user(self, user_info):
+        """
+        유저 생성 또는 업데이트 로직
+        - 같은 이메일이 존재하면 기존 유저를 업데이트
+        - 같은 이메일이 없으면 새 유저 생성
+        """
         try:
             email = user_info.get("email")
             name = user_info.get("name", "")
@@ -310,9 +317,10 @@ class GoogleLoginCallbackAPIView(APIView):
             user.name = name
             user.profile_image = profile_image
             user.save()
-
             return user
-        except Exception:
+
+        except Exception as e:
+            logger.error(f"유저 생성 또는 업데이트 중 오류 발생: {str(e)}")
             raise InternalServerException(
                 "사용자 생성 또는 업데이트 중 오류가 발생했습니다.", code="user_creation_error"
             )
