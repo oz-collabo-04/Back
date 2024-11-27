@@ -1,24 +1,12 @@
-import logging
-
+# common/exceptions.py
 from rest_framework.exceptions import APIException
 
-# Logger 설정
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # 로깅 레벨 설정
-
-# StreamHandler 생성
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)  # 핸들러의 로깅 레벨 설정
-
-# 로그 출력 형식 지정
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-stream_handler.setFormatter(formatter)  # 핸들러에 포매터 설정
-
-# 핸들러를 로거에 추가
-logger.addHandler(stream_handler)
+from common.logging_config import logger
 
 
 class CustomAPIException(APIException):
+    """기본 Custom API Exception 클래스"""
+
     status_code = 400
     default_detail = "요청 처리 중 오류가 발생했습니다."
     default_code = "error"
@@ -36,3 +24,35 @@ class CustomAPIException(APIException):
 
         # 코드 설정
         self.code = code if code else self.default_code
+
+
+class BadRequestException(CustomAPIException):
+    """400 Bad Request"""
+
+    status_code = 400
+    default_detail = "잘못된 요청입니다."
+    default_code = "bad_request"
+
+
+class NotFoundException(CustomAPIException):
+    """404 Not Found"""
+
+    status_code = 404
+    default_detail = "리소스를 찾을 수 없습니다."
+    default_code = "not_found"
+
+
+class InternalServerException(CustomAPIException):
+    """500 Internal Server Error"""
+
+    status_code = 500
+    default_detail = "서버 내부 오류가 발생했습니다."
+    default_code = "internal_server_error"
+
+
+class UnauthorizedException(CustomAPIException):
+    """401 Unauthorized"""
+
+    status_code = 401
+    default_detail = "인증이 필요합니다."
+    default_code = "unauthorized"

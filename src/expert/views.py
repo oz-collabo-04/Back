@@ -12,6 +12,7 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from expert.models import Career, Expert
 from expert.seriailzers import (
@@ -21,7 +22,6 @@ from expert.seriailzers import (
 )
 
 
-@extend_schema(tags=["X"])
 # 전문가 전환 - 전문가 정보 생성
 class ExpertCreateView(CreateAPIView):
     queryset = Expert.objects.all()
@@ -51,8 +51,32 @@ class ExpertCreateView(CreateAPIView):
         serializer.save(user=self.request.user)
 
 
+# 전문가 -> 유저 전환
+class ExpertDeactivatedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Expert"],
+        summary="전문가 -> 유저 전환",
+        description="현재 로그인된 사용자가 전문가에서 일반 유저로 전환합니다.",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        # 현재 사용자가 이미 유저 인지 확인
+        user = request.user
+        if not user.is_expert:
+            return Response({"detail": "이미 유저로 되어있습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 유저로 전환
+        user.is_expert = False
+        user.save()
+        return Response({"detail": "유저로 전환 되었습니다."}, status=status.HTTP_200_OK)
+
+
 # 전문가 리스트 조회 - 누구나
-@extend_schema(tags=["X"])
 class ExpertListView(ListAPIView):
     serializer_class = ExpertDetailSerializer
     permission_classes = [
@@ -88,7 +112,6 @@ class ExpertListView(ListAPIView):
         return Response(serializer.data)
 
 
-@extend_schema(tags=["X"])
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Expert.objects.all()
     serializer_class = ExpertDetailSerializer
@@ -124,6 +147,13 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
         if request.user != instance.user:
             raise PermissionDenied("자신의 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["X"],
+        summary="소프트 딜리트 사용으로 - 사용하지 않는 api",
+    )
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 
 class CareerListViews(ListCreateAPIView):
@@ -171,7 +201,7 @@ class CareerListViews(ListCreateAPIView):
 
     @extend_schema(
         tags=["Expert"],
-        summary="전문가 경력 일괄 수정 - 본인만 // 이게 필요한가요??",
+        summary="전문가 경력 일괄 수정 - 본인만",
         responses=CareerSerializer(),
     )
     def put(self, request, *args, **kwargs):
@@ -180,34 +210,3 @@ class CareerListViews(ListCreateAPIView):
         if request.user != instance.expert.user:
             raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
-
-
-@extend_schema(tags=["X"])
-class CareerDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Career.objects.all()
-    serializer_class = CareerSerializer
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        tags=["Expert"],
-        summary="특정 커리어 정보수정 - 본인만",
-        responses={200: CareerSerializer()},
-    )
-    def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if request.user != instance.expert.user:
-            raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
-        return self.partial_update(request, *args, **kwargs)  # partial_update를 사용하여 PATCH 처리
-
-    @extend_schema(
-        tags=["Expert"],
-        summary="전문가 경력 삭제 - 본인만",
-        responses={204: OpenApiTypes.NONE},
-    )
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # 로그인한 사용자와 경력의 소유자가 일치하는지 확인
-        if request.user != instance.expert.user:
-            raise PermissionDenied("본인의 경력 정보만 삭제할 수 있습니다.")
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)  # 명시적으로 204 응답 반환
