@@ -102,11 +102,13 @@ RATING_CHOICES = [
 ]
 
 NOTIFICATION_TYPE_CHOICES = [
-    ("message", "메시지 알림"),
-    ("contract", "예약 알림"),
-    ("estimate", "견적 알림"),
-    ("usage", "이용 알림"),
-    ("schedule", "일정 알림"),
+    ("message", "채팅 메시지 알림"),  # 채팅방에 읽지않은 메시지가 도착했을 때
+    ("reserved", "예약 확정 알림"),  # 채팅방에서 상호 합의로 예약을 확정 지었을 때 알림
+    ("review", "리뷰 등록 알림"),  # 서비스를 이용한 유저가 예약에 대한 리뷰를 작성 했을 때 알림
+    ("estimation", "견적 알림"),  # 유저가 신청한 견적 요청에 따라 전문가가 견적을 발송했을 때 알림
+    ("estimation_request", "견적 요청 알림"),  # 유저가 견적을 요청했을 때 알림
+    ("usage", "이용 완료 알림"),  # 유저가 서비스를 이용하고 난후 알림
+    ("schedule", "일정 알림"),  # 전문가에게 예약된 일정을 알려줌
 ]
 
 GENDER_CHOICES = [
