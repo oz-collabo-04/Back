@@ -19,8 +19,6 @@ class CareerSerializer(serializers.ModelSerializer):
 class ExpertCreateSerializer(serializers.ModelSerializer):
     # 입력만을 위한 필드
     careers = serializers.CharField(write_only=True)
-    available_location = serializers.SerializerMethodField()
-    service = serializers.SerializerMethodField()
 
     class Meta:
         model = Expert
@@ -98,8 +96,8 @@ class ExpertCreateSerializer(serializers.ModelSerializer):
 class ExpertDetailSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     careers = serializers.SerializerMethodField()
-    service = serializers.SerializerMethodField()
-    available_location = serializers.SerializerMethodField()
+    service_display = serializers.SerializerMethodField()
+    available_location_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Expert
@@ -108,9 +106,11 @@ class ExpertDetailSerializer(serializers.ModelSerializer):
             "id",
             "expert_image",
             "service",
+            "service_display",
             "standard_charge",
             "appeal",
             "available_location",
+            "available_location_display",
             "careers",
         ]
         read_only_fields = (
@@ -118,13 +118,13 @@ class ExpertDetailSerializer(serializers.ModelSerializer):
             "id",
         )
 
-    def get_service(self, obj):
+    def get_service_display(self, obj):
         """
         service 필드의 키 값을 한글로 변환하여 반환합니다.
         """
         return dict(SERVICE_CHOICES).get(obj.service, obj.service)
 
-    def get_available_location(self, obj):
+    def get_available_location_display(self, obj):
         """
         available_location 필드는 AREA_CHOICES 키에 해당하는 값을 반환합니다.
         """
