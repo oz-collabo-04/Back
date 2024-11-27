@@ -20,7 +20,7 @@ from expert.seriailzers import (
     ExpertDetailSerializer,
 )
 
-
+@extend_schema(tags=['X'])
 # 전문가 전환 - 전문가 정보 생성
 class ExpertCreateView(CreateAPIView):
     queryset = Expert.objects.all()
@@ -51,6 +51,7 @@ class ExpertCreateView(CreateAPIView):
 
 
 # 전문가 리스트 조회 - 누구나
+@extend_schema(tags=['X'])
 class ExpertListView(ListAPIView):
     serializer_class = ExpertDetailSerializer
     permission_classes = [
@@ -85,7 +86,7 @@ class ExpertListView(ListAPIView):
         serializer = self.get_serializer(limited_experts, many=True)
         return Response(serializer.data)
 
-
+@extend_schema(tags=['X'])
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Expert.objects.all()
     serializer_class = ExpertDetailSerializer
@@ -178,7 +179,7 @@ class CareerListViews(ListCreateAPIView):
             raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
 
-
+@extend_schema(tags=['X'])
 class CareerDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Career.objects.all()
     serializer_class = CareerSerializer

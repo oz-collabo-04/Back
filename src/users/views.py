@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from users.seriailzers import UserSerializer
 
-
+@extend_schema(tags=['X'])
 # 유저 상세내역, 정보수정, 삭제 뷰
 class UserEditView(RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
@@ -49,7 +49,7 @@ class UserEditView(RetrieveUpdateDestroyAPIView):
         serializer.save()
         return Response(serializer.data)
 
-
+@extend_schema(tags=['X'])
 # 고객 회원 탈퇴 뷰 / is_active 상태 False로 변경
 class UserDeactivateView(RetrieveUpdateAPIView):
     serializer_class = UserSerializer
