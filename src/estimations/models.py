@@ -15,7 +15,7 @@ class EstimationsRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     service_list = MultiSelectField(choices=SERVICE_CHOICES, max_length=30)
     prefer_gender = models.CharField(max_length=20, choices=GENDER_CHOICES)
-    location = MultiSelectField(choices=AREA_CHOICES, max_length=30, max_choices=3)
+    location = models.CharField(choices=AREA_CHOICES, max_length=20)
     wedding_hall = models.CharField(max_length=50)
     wedding_datetime = models.DateTimeField()
     status = models.CharField(max_length=10, choices=REQUEST_STATUS_CHOICES)
