@@ -4,6 +4,8 @@
 source ~/.bashrc
 pyenv activate django-collabo
 
+export DJANGO_SETTINGS_MODULE=config.settings.settings
+
 # 프로젝트 디렉토리로 이동
 cd src
 
@@ -17,4 +19,5 @@ python manage.py collectstatic --no-input
 
 # Gunicorn 실행
 echo "Starting Gunicorn..."
-exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
+#exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
+exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000
