@@ -42,7 +42,7 @@ class ServiceChoicesView(APIView):
             return Response({"services": services}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
-                {"detail": "오류가 발생했습니다."},
+                {"detail": f"오류가 발생했습니다. {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -79,10 +79,39 @@ class LocationChoicesView(APIView):
     )
     def get(self, request, *args, **kwargs):
         try:
-            areas = [{"key": key, "label": label} for key, label in AREA_CHOICES]
-            return Response({"areas": areas}, status=status.HTTP_200_OK)
+            service_locations = {
+                "경상남도": [],
+                "경상북도": [],
+                "충청남도": [],
+                "충청북도": [],
+                "전라남도": [],
+                "전라북도": [],
+                "강원도": [],
+                "경기도": [],
+                "특별시/광역시/자치도": [],
+            }
+            for value, label in AREA_CHOICES:
+                if "경상남도" in label:
+                    service_locations["경상남도"].append({label: value})
+                elif "경상북도" in label:
+                    service_locations["경상북도"].append({label: value})
+                elif "전라남도" in label:
+                    service_locations["전라남도"].append({label: value})
+                elif "전라북도" in label:
+                    service_locations["전라북도"].append({label: value})
+                elif "충청남도" in label:
+                    service_locations["충청남도"].append({label: value})
+                elif "충청북도" in label:
+                    service_locations["충청북도"].append({label: value})
+                elif "강원도" in label:
+                    service_locations["강원도"].append({label: value})
+                elif "경기도" in label:
+                    service_locations["경기도"].append({label: value})
+                else:
+                    service_locations[label] = value
+            return Response({"service_locations": service_locations}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
-                {"detail": "오류가 발생했습니다."},
+                {"detail": f"오류가 발생했습니다. {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
