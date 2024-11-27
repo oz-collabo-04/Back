@@ -88,7 +88,6 @@ class LocationChoicesView(APIView):
                 "전라북도": [],
                 "강원도": [],
                 "경기도": [],
-                "특별시/광역시/자치도": [],
             }
             for value, label in AREA_CHOICES:
                 if "경상남도" in label:
