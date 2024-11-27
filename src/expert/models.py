@@ -10,7 +10,7 @@ class Expert(models.Model):
     expert_image = models.ImageField(upload_to="images/experts/profile/")
     service = models.CharField(choices=SERVICE_CHOICES, max_length=10, default="")
     standard_charge = models.IntegerField(default=0)
-    available_location = MultiSelectField(choices=AREA_CHOICES, max_length=50)
+    available_location = MultiSelectField(choices=AREA_CHOICES, max_length=100)
     appeal = models.TextField(max_length=300)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(null=True, blank=True)

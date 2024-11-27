@@ -78,7 +78,7 @@ class Migration(migrations.Migration):
                     ("gyeongnam_gimhae", "경상남도 김해시"),
                     ("gyeongnam_miryang", "경상남도 밀양시"),
                 ],
-                max_length=50,
+                max_length=100,
             ),
         ),
         migrations.AlterField(
