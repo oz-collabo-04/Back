@@ -1,4 +1,5 @@
 import random
+from xmlrpc.client import Boolean
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -88,23 +89,34 @@ class ExpertListView(ListAPIView):
                 description="서비스명으로 전문가를 필터링 합니다.(예: mc, snap 등)",
                 required=True,
                 type=str,
-            )
+            ),
+            OpenApiParameter(
+                name="random",
+                description="랜덤 조회 여부 (random=True: 3명만 랜덤 조회, random=False: 전체 조회)",
+                required=False,
+                type=OpenApiTypes.BOOL,
+            ),
         ],
-        responses={200: ExpertSerializer()},
+        responses={200: ExpertSerializer(many=True)},
     )
     def get(self, request, *args, **kwargs):
         service_name = request.query_params.get("service")
+        random_query = request.query_params.get("random", "false").lower()
+
         if not service_name:
             return Response({"detail": "서비스명을 제공해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 서비스명으로 필터링
         experts = Expert.objects.filter(service=service_name).prefetch_related("career_set")
 
-        # 3명의 전문가를 랜덤으로 선택
-        expert_list = list(experts)
-        random.shuffle(expert_list)
-        limited_experts = expert_list[:3]
+        # 랜덤 조회 여부 확인
+        if random_query == "true":
+            # 랜덤으로 3명의 전문가를 반환
+            experts = list(experts)
+            random.shuffle(experts)
+            experts = experts[:3]
 
-        serializer = self.get_serializer(limited_experts, many=True)
+        serializer = self.get_serializer(experts, many=True)
         return Response(serializer.data)
 
 
