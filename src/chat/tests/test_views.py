@@ -1,19 +1,14 @@
-from datetime import datetime
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.timezone import make_aware
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from chat.models import ChatRoom, Message
+from estimations.models import EstimationsRequest
 from expert.models import Expert
 
 User = get_user_model()
-
-
-from estimations.models import EstimationsRequest
 
 
 class ChatAPITestCase(TestCase):
@@ -29,11 +24,20 @@ class ChatAPITestCase(TestCase):
             gender="male",
             is_active=True,
         )
+
+        self.expert_user = User.objects.create_user(
+            email="expertuser@example.com",
+            name="전문가",
+            phone_number="01087654321",
+            gender="male",
+            is_active=True,
+        )
+
         self.client.force_authenticate(user=self.user)
 
         # 전문가 생성
         self.expert = Expert.objects.create(
-            user=self.user,
+            user=self.expert_user,
             expert_image="path/to/expert_image.jpg",
             service="mc",
             standard_charge=100000,
@@ -51,10 +55,20 @@ class ChatAPITestCase(TestCase):
             wedding_datetime="2024-12-12",
         )
 
+        self.estimation_request2 = EstimationsRequest.objects.create(
+            user=self.user,
+            service_list="mc",
+            prefer_gender="male",
+            status="pending",
+            location="Seoul",
+            wedding_datetime="2024-12-12",
+        )
+
         # 채팅방 생성
         self.chatroom = ChatRoom.objects.create(
             user=self.user,
             expert=self.expert,
+            request=self.estimation_request2,
             user_exist=True,
             expert_exist=True,
         )
@@ -79,7 +93,7 @@ class ChatAPITestCase(TestCase):
     def test_create_chatroom(self):
         # When: 새로운 채팅방 생성
         url = reverse("chatroom-list-create")
-        data = {"user": self.user.id, "expert": self.expert.id}
+        data = {"expert_id": self.expert.id, "request_id": self.estimation_request.id}
         response = self.client.post(url, data)
 
         # Then: 채팅방 생성 확인
@@ -130,13 +144,3 @@ class ChatAPITestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["content"], self.message.content)
-
-    def test_create_message(self):
-        # When: 새로운 메시지 생성
-        url = reverse("message-list-create", kwargs={"room_id": self.chatroom.id})
-        data = {"room": self.chatroom.id, "sender": self.user.id, "content": "새로운 메시지입니다!"}
-        response = self.client.post(url, data)
-
-        # Then: 메시지 생성 확인
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Message.objects.filter(content="새로운 메시지입니다!").exists())

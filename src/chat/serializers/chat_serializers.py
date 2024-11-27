@@ -1,41 +1,34 @@
 from rest_framework import serializers
 
 from chat.models import ChatRoom, Message
+from estimations.serializers.guest_seriailzers import EstimationsRequestSerializer
+from reservations.seriailzers import ExpertInfoSerializer
+from users.models import User
+from users.seriailzers import UserSerializer
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    expert = ExpertInfoSerializer(read_only=True)
+    request = EstimationsRequestSerializer(read_only=True)
+
+    expert_id = serializers.IntegerField(write_only=True)
+    request_id = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = ChatRoom
-        fields = "__all__"
+        fields = ["id", "user", "expert", "expert_id", "request", "request_id", "expert_exist", "user_exist"]
+        read_only_fields = ["id", "user", "expert", "request", "expert_exist", "user_exist"]
 
-    def validate(self, data):
-        # 유저와 전문가 각각 유효성 검사 수행
-        self.validate_user(data)
-        self.validate_expert(data)
-        self.validate_user_and_expert(data)
-        return data
 
-    def validate_user(self, data):
-        # 유효성 검사에서 data가 딕셔너리인지 확인
-        if isinstance(data, dict):
-            user = data.get("user")
-        else:
-            user = data  # 이미 객체인 경우
+class ChatroomUpdateSerializer(serializers.ModelSerializer):
+    user_exist = serializers.BooleanField(required=False)
+    expert_exist = serializers.BooleanField(required=False)
 
-        if not user:
-            raise serializers.ValidationError("User 정보가 필요합니다.")
-        return user
-
-    def validate_expert(self, data):
-        expert = data.get("expert")
-        if not expert:
-            raise serializers.ValidationError("전문가 정보는 필수입니다.")
-
-    def validate_user_and_expert(self, data):
-        user = data.get("user")
-        expert = data.get("expert")
-        if user == expert:
-            raise serializers.ValidationError("유저와 전문가는 동일할 수 없습니다.")
+    class Meta:
+        model = ChatRoom
+        fields = ["id", "user", "expert", "request", "expert_exist", "user_exist"]
+        read_only_fields = ["id", "user", "expert", "request"]
 
 
 class MessageSerializer(serializers.ModelSerializer):
