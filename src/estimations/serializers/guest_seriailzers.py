@@ -1,7 +1,7 @@
 from datetime import timedelta
-from django.utils import timezone
 
 from django.db.models import Avg
+from django.utils import timezone
 from rest_framework import fields, serializers
 
 from common.constants.choices import SERVICE_CHOICES
@@ -17,7 +17,6 @@ class ExpertUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "name", "email", "phone_number", "gender"]
         read_only_fields = ["id", "name", "email", "phone_number", "gender"]
-
 
 
 class EstimationExpertSerializer(serializers.ModelSerializer):
@@ -51,9 +50,12 @@ class EstimationExpertSerializer(serializers.ModelSerializer):
         )
 
     def get_rating(self, obj):
-        average_rating = Review.objects.filter(
-            reservation__estimation__expert_id=obj.id
-        ).aggregate(average_rating=Avg('rating'))['average_rating'] or 0.0
+        average_rating = (
+            Review.objects.filter(reservation__estimation__expert_id=obj.id).aggregate(average_rating=Avg("rating"))[
+                "average_rating"
+            ]
+            or 0.0
+        )
         return round(average_rating, 1)
 
 
