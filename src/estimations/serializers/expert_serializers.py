@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from common.constants.choices import SERVICE_CHOICES
-from estimations.models import Estimation, RequestManager, EstimationsRequest
+from estimations.models import Estimation, EstimationsRequest, RequestManager
 from users.models import User
 
 
@@ -40,6 +40,6 @@ class EstimationRequestListForExpertSerializer(serializers.ModelSerializer):
     request = EstimationRequestSerializerForExpert(read_only=True)
 
     class Meta:
-        model =  RequestManager
+        model = RequestManager
         fields = ["id", "expert", "request", "created_at", "updated_at"]
         read_only_fields = ("id", "expert", "request", "created_at", "updated_at")

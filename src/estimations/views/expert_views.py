@@ -1,12 +1,19 @@
 from drf_spectacular.utils import extend_schema
-from rest_framework.generics import CreateAPIView, UpdateAPIView, get_object_or_404, ListAPIView, DestroyAPIView
+from rest_framework.generics import (
+    CreateAPIView,
+    DestroyAPIView,
+    ListAPIView,
+    UpdateAPIView,
+    get_object_or_404,
+)
 from rest_framework.permissions import IsAuthenticated
 
 from common.permissions.expert_permissions import IsExpert
 from estimations.models import Estimation, EstimationsRequest, RequestManager
 from estimations.serializers.expert_serializers import (
     EstimationCreateByExpertSerializer,
-    EstimationUpdateByExpertSerializer, EstimationRequestListForExpertSerializer,
+    EstimationRequestListForExpertSerializer,
+    EstimationUpdateByExpertSerializer,
 )
 
 
