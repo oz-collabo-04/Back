@@ -1,7 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 
 from common.constants.choices import NOTIFICATION_TYPE_CHOICES
-from users.models import User
+
+User = get_user_model()
 
 
 class Notification(models.Model):

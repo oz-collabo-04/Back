@@ -33,6 +33,7 @@ CUSTOM_APPS = [
 ]
 
 THIRDPARTY_APPS = [
+    "daphne",
     "rest_framework",
     "drf_spectacular",
     "django_redis",
@@ -45,7 +46,7 @@ THIRDPARTY_APPS = [
     "multiselectfield",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRDPARTY_APPS
+INSTALLED_APPS = CUSTOM_APPS + THIRDPARTY_APPS + DJANGO_APPS
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -84,6 +85,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # Redis 서버의 호스트와 포트 설정
+        },
+    },
+}
 
 AUTH_USER_MODEL = "users.User"
 
