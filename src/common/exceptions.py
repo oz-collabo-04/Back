@@ -1,4 +1,5 @@
 import logging
+
 from rest_framework.exceptions import APIException
 
 # Logger 설정
@@ -15,6 +16,7 @@ stream_handler.setFormatter(formatter)  # 핸들러에 포매터 설정
 
 # 핸들러를 로거에 추가
 logger.addHandler(stream_handler)
+
 
 class CustomAPIException(APIException):
     status_code = 400
