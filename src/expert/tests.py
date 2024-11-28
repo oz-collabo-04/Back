@@ -1,7 +1,8 @@
 import io
+
 from django.core.files.uploadedfile import SimpleUploadedFile
-from PIL import Image
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
