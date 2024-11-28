@@ -119,7 +119,6 @@ class ExpertListView(ListAPIView):
         return Response(serializer.data)
 
 
-
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = ExpertSerializer
     permission_classes = [IsAuthenticated]
