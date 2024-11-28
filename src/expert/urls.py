@@ -14,6 +14,6 @@ urlpatterns = [
     path("register/", ExpertCreateView.as_view(), name="expert_register"),
     path("deactivate/", ExpertDeactivatedView.as_view(), name="expert_deactivate"),
     # path("/<int:pk>",)
-    path("<int:pk>/", ExpertDetailView.as_view(), name="expert_detail"),
-    path("<int:expert_id>/careers/", CareerListViews.as_view(), name="expert_careers"),
+    path("detail/", ExpertDetailView.as_view(), name="expert_detail"),
+    path("careers/", CareerListViews.as_view(), name="expert_careers"),
 ]

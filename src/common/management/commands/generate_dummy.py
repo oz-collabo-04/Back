@@ -105,7 +105,7 @@ class Command(BaseCommand):
                     start_date=timezone.now(),
                     end_date=timezone.now().replace(year=timezone.now().year + random_num),
                 )
-            careers = expert.career_set.all().values_list("title", flat=True)
+            careers = expert.careers.all().values_list("title", flat=True)
 
             # 최종적으로 생성된 전문가의 정보를 출력
             print(
