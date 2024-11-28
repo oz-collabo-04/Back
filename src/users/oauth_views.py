@@ -316,6 +316,7 @@ class GoogleLoginCallbackAPIView(APIView):
             user, created = User.objects.get_or_create(email=email)
             user.name = name
             user.profile_image = profile_image
+            user.is_active = True
             user.save()
             return user
 

@@ -1,5 +1,4 @@
 import random
-from xmlrpc.client import Boolean
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -107,7 +106,7 @@ class ExpertListView(ListAPIView):
             return Response({"detail": "서비스명을 제공해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         # 서비스명으로 필터링
-        experts = Expert.objects.filter(service=service_name).prefetch_related("career_set")
+        experts = Expert.objects.filter(service=service_name).prefetch_related("careers")
 
         # 랜덤 조회 여부 확인
         if random_query == "true":
