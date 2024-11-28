@@ -120,13 +120,19 @@ class ExpertListView(ListAPIView):
 
 
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Expert.objects.all()
     serializer_class = ExpertSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        # 현재 로그인한 사용자와 연결된 Expert 객체 가져오기
+        try:
+            return Expert.objects.get(user=self.request.user)
+        except Expert.DoesNotExist:
+            raise PermissionDenied("전문가 정보를 찾을 수 없습니다.")
 
     @extend_schema(
         tags=["Expert"],
-        summary="전문가 상세 조회 - 누구나",
+        summary="전문가 상세 조회 - 로그인한 본인만",
         responses={200: ExpertSerializer()},
     )
     def get(self, request, *args, **kwargs):
@@ -138,10 +144,6 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
         responses={200: ExpertSerializer()},
     )
     def put(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # 전문가 ID가 로그인한 사용자와 일치하는지 확인
-        if request.user != instance.user:
-            raise PermissionDenied("자신의 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
 
     @extend_schema(
@@ -150,10 +152,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
         responses={200: ExpertSerializer()},
     )
     def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if request.user != instance.user:
-            raise PermissionDenied("자신의 정보만 수정할 수 있습니다.")
-        return self.update(request, *args, **kwargs)
+        return self.partial_update(request, *args, **kwargs)
 
     @extend_schema(
         tags=["X"],
