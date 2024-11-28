@@ -17,7 +17,7 @@ class Expert(models.Model):
 
 
 class Career(models.Model):
-    expert = models.ForeignKey(Expert, on_delete=models.CASCADE)
+    expert = models.ForeignKey(Expert, on_delete=models.CASCADE, related_name="careers")
     title = models.CharField(max_length=20)
     description = models.TextField(max_length=300)
     start_date = models.DateField()
