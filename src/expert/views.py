@@ -217,5 +217,3 @@ class CareerListViews(ListCreateAPIView):
         if request.user != instance.expert.user:
             raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
-
-
