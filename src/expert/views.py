@@ -1,5 +1,4 @@
 import random
-from xmlrpc.client import Boolean
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -16,19 +15,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from expert.models import Career, Expert
-from expert.seriailzers import CareerSerializer, ExpertSerializer
+from expert.seriailzers import CareerSerializer, ExpertCreateSerializer, ExpertDetailSerializer
 
 
 # 전문가 전환 - 전문가 정보 생성
 class ExpertCreateView(CreateAPIView):
     queryset = Expert.objects.all()
-    serializer_class = ExpertSerializer
+    serializer_class = ExpertCreateSerializer
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["Expert"],
         summary="전문가 전환 - expert 생성 - 본인만",
-        responses={200: ExpertSerializer()},
+        responses={200: ExpertCreateSerializer()},
     )
     def post(self, request, *args, **kwargs):
         # 현재 사용자가 이미 전문가인지 확인
@@ -75,7 +74,7 @@ class ExpertDeactivatedView(APIView):
 
 # 전문가 리스트 조회 - 누구나
 class ExpertListView(ListAPIView):
-    serializer_class = ExpertSerializer
+    serializer_class = ExpertDetailSerializer
     permission_classes = [
         AllowAny,
     ]
@@ -97,7 +96,7 @@ class ExpertListView(ListAPIView):
                 type=OpenApiTypes.BOOL,
             ),
         ],
-        responses={200: ExpertSerializer(many=True)},
+        responses={200: ExpertDetailSerializer(many=True)},
     )
     def get(self, request, *args, **kwargs):
         service_name = request.query_params.get("service")
@@ -122,13 +121,13 @@ class ExpertListView(ListAPIView):
 
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Expert.objects.all()
-    serializer_class = ExpertSerializer
+    serializer_class = ExpertDetailSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(
         tags=["Expert"],
         summary="전문가 상세 조회 - 누구나",
-        responses={200: ExpertSerializer()},
+        responses={200: ExpertDetailSerializer()},
     )
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -136,7 +135,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     @extend_schema(
         tags=["Expert"],
         summary="전문가 정보 전체 수정 - 본인만",
-        responses={200: ExpertSerializer()},
+        responses={200: ExpertDetailSerializer()},
     )
     def put(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -148,7 +147,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     @extend_schema(
         tags=["Expert"],
         summary="전문가 정보 부분 수정 - 본인만",
-        responses={200: ExpertSerializer()},
+        responses={200: ExpertDetailSerializer()},
     )
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
