@@ -15,19 +15,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from expert.models import Career, Expert
-from expert.seriailzers import CareerSerializer, ExpertCreateSerializer, ExpertDetailSerializer
+from expert.seriailzers import CareerSerializer, ExpertSerializer
 
 
 # 전문가 전환 - 전문가 정보 생성
 class ExpertCreateView(CreateAPIView):
     queryset = Expert.objects.all()
-    serializer_class = ExpertCreateSerializer
+    serializer_class = ExpertSerializer
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["Expert"],
         summary="전문가 전환 - expert 생성 - 본인만",
-        responses={200: ExpertCreateSerializer()},
+        responses={200: ExpertSerializer()},
     )
     def post(self, request, *args, **kwargs):
         # 현재 사용자가 이미 전문가인지 확인
@@ -74,7 +74,7 @@ class ExpertDeactivatedView(APIView):
 
 # 전문가 리스트 조회 - 누구나
 class ExpertListView(ListAPIView):
-    serializer_class = ExpertDetailSerializer
+    serializer_class = ExpertSerializer
     permission_classes = [
         AllowAny,
     ]
@@ -96,7 +96,7 @@ class ExpertListView(ListAPIView):
                 type=OpenApiTypes.BOOL,
             ),
         ],
-        responses={200: ExpertDetailSerializer(many=True)},
+        responses={200: ExpertSerializer(many=True)},
     )
     def get(self, request, *args, **kwargs):
         service_name = request.query_params.get("service")
@@ -106,7 +106,7 @@ class ExpertListView(ListAPIView):
             return Response({"detail": "서비스명을 제공해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         # 서비스명으로 필터링
-        experts = Expert.objects.filter(service=service_name).prefetch_related("career_set")
+        experts = Expert.objects.filter(service=service_name).prefetch_related("careers")
 
         # 랜덤 조회 여부 확인
         if random_query == "true":
@@ -121,13 +121,13 @@ class ExpertListView(ListAPIView):
 
 class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Expert.objects.all()
-    serializer_class = ExpertDetailSerializer
+    serializer_class = ExpertSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(
         tags=["Expert"],
         summary="전문가 상세 조회 - 누구나",
-        responses={200: ExpertDetailSerializer()},
+        responses={200: ExpertSerializer()},
     )
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -135,7 +135,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     @extend_schema(
         tags=["Expert"],
         summary="전문가 정보 전체 수정 - 본인만",
-        responses={200: ExpertDetailSerializer()},
+        responses={200: ExpertSerializer()},
     )
     def put(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -147,7 +147,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     @extend_schema(
         tags=["Expert"],
         summary="전문가 정보 부분 수정 - 본인만",
-        responses={200: ExpertDetailSerializer()},
+        responses={200: ExpertSerializer()},
     )
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -217,3 +217,5 @@ class CareerListViews(ListCreateAPIView):
         if request.user != instance.expert.user:
             raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
         return self.update(request, *args, **kwargs)
+
+
