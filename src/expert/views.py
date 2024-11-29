@@ -12,7 +12,7 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,11 +44,11 @@ class ExpertCreateView(CreateAPIView):
             careers = json.loads(careers)
 
         request_data = {
-            'available_location': request.data.get("available_location", []),
-            'appeal': request.data.get("appeal", []),
-            'service': request.data.get("service", []),
-            'careers': careers,
-            'expert_image': request.data.get("expert_image", [])
+            "available_location": request.data.get("available_location", []),
+            "appeal": request.data.get("appeal", []),
+            "service": request.data.get("service", []),
+            "careers": careers,
+            "expert_image": request.data.get("expert_image", []),
         }
 
         # 전문가로 전환
