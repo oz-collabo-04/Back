@@ -8,12 +8,13 @@ from rest_framework.generics import (
 )
 from rest_framework.permissions import IsAuthenticated
 
+from common.exceptions import BadRequestException
 from common.permissions.expert_permissions import IsExpert
 from estimations.models import Estimation, EstimationsRequest, RequestManager
 from estimations.serializers.expert_serializers import (
     EstimationCreateByExpertSerializer,
     EstimationRequestListForExpertSerializer,
-    EstimationUpdateByExpertSerializer,
+    EstimationUpdateByExpertSerializer, EstimationListForExpertSerializer,
 )
 
 
@@ -24,6 +25,33 @@ class EstimationCreateByExpertAPIView(CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(expert=self.request.user.expert)
+
+
+@extend_schema(tags=["estimation-expert"], summary="전문가가 자신이 내려준 견적을 params로 필터링 하여 리스트 확인")
+class EstimationListByExpertAPIView(ListAPIView):
+    permission_classes = (IsAuthenticated, IsExpert)
+    serializer_class = EstimationListForExpertSerializer
+
+    def get_queryset(self):
+        filter_status = ["pending", "confirmed"]
+        queryset = Estimation.objects.filter(
+            expert=self.request.user.expert,
+            reservation__isnull=False,
+            reservation__status__in=filter_status
+        )
+        year = self.request.query_params.get("year", None)
+        month = self.request.query_params.get("month", None)
+        if (not year and month) or (not month and year):
+            return BadRequestException("month와 year는 같이 제출되어야합니다.")
+
+        if year and month:
+            queryset = queryset.filter(
+                due_date__year=year,
+                due_date__month=month
+            )
+
+        return queryset
+
 
 
 class EstimationUpdateByExpertAPIView(UpdateAPIView):
