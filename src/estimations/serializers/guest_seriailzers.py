@@ -4,7 +4,7 @@ from django.db.models import Avg
 from django.utils import timezone
 from rest_framework import fields, serializers
 
-from common.constants.choices import SERVICE_CHOICES, AREA_CHOICES
+from common.constants.choices import AREA_CHOICES, SERVICE_CHOICES
 from estimations.models import Estimation, EstimationsRequest
 from expert.models import Expert
 from expert.seriailzers import CareerSerializer
@@ -13,7 +13,7 @@ from users.models import User
 
 
 class ExpertUserSerializer(serializers.ModelSerializer):
-    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    gender_display = serializers.CharField(source="get_gender_display", read_only=True)
 
     class Meta:
         model = User
@@ -25,7 +25,7 @@ class EstimationExpertSerializer(serializers.ModelSerializer):
     user = ExpertUserSerializer(read_only=True)
     careers = CareerSerializer(many=True, read_only=True)
     rating = serializers.SerializerMethodField()
-    service_display = serializers.CharField(source='get_service_display', read_only=True)
+    service_display = serializers.CharField(source="get_service_display", read_only=True)
     available_location_display = serializers.CharField(source="get_available_location_display", read_only=True)
 
     class Meta:
@@ -70,9 +70,9 @@ class EstimationExpertSerializer(serializers.ModelSerializer):
 class EstimationsRequestSerializer(serializers.ModelSerializer):
     service_list = fields.MultipleChoiceField(choices=SERVICE_CHOICES)
     service_list_display = fields.CharField(source="get_service_list_display", read_only=True)
-    prefer_gender_display = fields.CharField(source='get_prefer_gender_display', read_only=True)
-    location_display = fields.CharField(source='get_location_display', read_only=True)
-    status_display = fields.CharField(source='get_status_display', read_only=True)
+    prefer_gender_display = fields.CharField(source="get_prefer_gender_display", read_only=True)
+    location_display = fields.CharField(source="get_location_display", read_only=True)
+    status_display = fields.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = EstimationsRequest
@@ -101,7 +101,7 @@ class EstimationsRequestSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "created_at",
-            "updated_at"
+            "updated_at",
         ]
 
     def validate_wedding_datetime(self, value):
@@ -114,8 +114,8 @@ class EstimationsRequestSerializer(serializers.ModelSerializer):
 # 견적 리스트 조회
 class EstimationSerializer(serializers.ModelSerializer):
     expert = EstimationExpertSerializer(read_only=True)
-    service_display = serializers.CharField(source='get_service_display', read_only=True)
-    location_display = serializers.CharField(source='get_location_display', read_only=True)
+    service_display = serializers.CharField(source="get_service_display", read_only=True)
+    location_display = serializers.CharField(source="get_location_display", read_only=True)
 
     class Meta:
         model = Estimation
@@ -151,8 +151,8 @@ class EstimationSerializer(serializers.ModelSerializer):
 class EstimationRetrieveSerializer(serializers.ModelSerializer):
     expert = EstimationExpertSerializer(read_only=True)
     request = EstimationsRequestSerializer(read_only=True)
-    service_display = serializers.CharField(source='get_service_display', read_only=True)
-    location_display = serializers.CharField(source='get_location_display', read_only=True)
+    service_display = serializers.CharField(source="get_service_display", read_only=True)
+    location_display = serializers.CharField(source="get_location_display", read_only=True)
 
     class Meta:
         model = Estimation
@@ -167,7 +167,7 @@ class EstimationRetrieveSerializer(serializers.ModelSerializer):
             "service_display",
             "charge",
             "created_at",
-            "updated_at"
+            "updated_at",
         ]
         read_only_fields = [
             "id",

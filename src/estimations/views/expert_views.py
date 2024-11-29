@@ -13,8 +13,9 @@ from common.permissions.expert_permissions import IsExpert
 from estimations.models import Estimation, EstimationsRequest, RequestManager
 from estimations.serializers.expert_serializers import (
     EstimationCreateByExpertSerializer,
+    EstimationListForExpertSerializer,
     EstimationRequestListForExpertSerializer,
-    EstimationUpdateByExpertSerializer, EstimationListForExpertSerializer,
+    EstimationUpdateByExpertSerializer,
 )
 
 
@@ -35,9 +36,7 @@ class EstimationListByExpertAPIView(ListAPIView):
     def get_queryset(self):
         filter_status = ["pending", "confirmed"]
         queryset = Estimation.objects.filter(
-            expert=self.request.user.expert,
-            reservation__isnull=False,
-            reservation__status__in=filter_status
+            expert=self.request.user.expert, reservation__isnull=False, reservation__status__in=filter_status
         )
         year = self.request.query_params.get("year", None)
         month = self.request.query_params.get("month", None)
@@ -45,13 +44,9 @@ class EstimationListByExpertAPIView(ListAPIView):
             return BadRequestException("month와 year는 같이 제출되어야합니다.")
 
         if year and month:
-            queryset = queryset.filter(
-                due_date__year=year,
-                due_date__month=month
-            )
+            queryset = queryset.filter(due_date__year=year, due_date__month=month)
 
         return queryset
-
 
 
 class EstimationUpdateByExpertAPIView(UpdateAPIView):
