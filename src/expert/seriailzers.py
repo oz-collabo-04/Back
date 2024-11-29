@@ -1,3 +1,5 @@
+import json
+
 from django.db import transaction
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -103,11 +105,19 @@ class ExpertSerializer(serializers.ModelSerializer):
             expert = Expert.objects.create(user=user, **validated_data)
 
             # Career 객체 생성
-            for career in careers_data:
-                if not isinstance(career, dict):
-                    raise serializers.ValidationError({"careers": "careers 리스트의 각 항목은 딕셔너리여야 합니다."})
-                Career.objects.create(expert=expert, **career)
+            Career.objects.bulk_create([Career(expert=expert, **career) for career in careers_data])
 
             # 사용자 상태를 전문가로 설정
             user.is_expert = True
             user.save()
+
+            return expert
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+
+        if isinstance(instance.available_location, str):
+            location_list = instance.available_location.split(", ")
+            ret["available_location_display"] = [dict(AREA_CHOICES).get(location) for location in location_list]
+
+        return ret

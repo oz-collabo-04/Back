@@ -1,5 +1,7 @@
+import json
 import random
 
+from django.http import QueryDict
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -10,10 +12,12 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.logging_config import logger
 from expert.models import Career, Expert
 from expert.seriailzers import CareerSerializer, ExpertSerializer
 
@@ -23,6 +27,7 @@ class ExpertCreateView(CreateAPIView):
     queryset = Expert.objects.all()
     serializer_class = ExpertSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
         tags=["Expert"],
@@ -34,9 +39,20 @@ class ExpertCreateView(CreateAPIView):
         user = request.user
         if user.is_expert:
             return Response({"detail": "이미 전문가 전환이 되어 있습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        careers = request.data.get("careers", [])
+        if careers:
+            careers = json.loads(careers)
+
+        request_data = {
+            "available_location": request.data.get("available_location", []),
+            "appeal": request.data.get("appeal", []),
+            "service": request.data.get("service", []),
+            "careers": careers,
+            "expert_image": request.data.get("expert_image", []),
+        }
 
         # 전문가로 전환
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
