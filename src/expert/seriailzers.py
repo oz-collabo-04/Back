@@ -103,9 +103,7 @@ class ExpertSerializer(serializers.ModelSerializer):
             expert = Expert.objects.create(user=user, **validated_data)
 
             # Career 객체 생성
-            Career.objects.bulk_create([
-                Career(expert=expert, **career) for career in careers_data
-            ])
+            Career.objects.bulk_create([Career(expert=expert, **career) for career in careers_data])
 
             # 사용자 상태를 전문가로 설정
             user.is_expert = True
@@ -124,22 +122,17 @@ class ExpertSerializer(serializers.ModelSerializer):
             Career.objects.filter(expert=instance).delete()
 
             # 새로운 Career 객체 생성
-            Career.objects.bulk_create([
-                Career(expert=instance, **career) for career in careers_data
-            ])
+            Career.objects.bulk_create([Career(expert=instance, **career) for career in careers_data])
 
             instance = super().update(instance, validated_data)
 
             return instance
-
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
 
         if isinstance(instance.available_location, str):
             location_list = instance.available_location.split(", ")
-            ret["available_location_display"] = [
-                dict(AREA_CHOICES).get(location) for location in location_list
-            ]
+            ret["available_location_display"] = [dict(AREA_CHOICES).get(location) for location in location_list]
 
         return ret
