@@ -100,9 +100,13 @@ CHANNEL_LAYERS = {
 AUTH_USER_MODEL = "users.User"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "UPDATE_LAST_LOGIN": True,
+    "ROTATE_REFRESH_TOKENS": True,  # 리프레시 토큰 재발급
+    "BLACKLIST_AFTER_ROTATION": True,  # 블랙리스트 사용
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
 
 # Password validation
