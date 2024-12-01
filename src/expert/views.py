@@ -221,6 +221,7 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
         instance.delete()
         return Response({"detail": "전문가 정보가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
+
 class CareerListViews(ListCreateAPIView):
     serializer_class = CareerSerializer
     permission_classes = (IsAuthenticated,)

@@ -1,4 +1,5 @@
 import urllib.parse
+
 from rest_framework import serializers
 
 from users.models import User
@@ -22,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
 
             # "/media/" 제거
             if decoded_url.startswith("/media/"):
-                decoded_url = decoded_url[len("/media/"):]
+                decoded_url = decoded_url[len("/media/") :]
 
             # ":/"를 "://"로 수정
             decoded_url = decoded_url.replace(":/", "://", 1)  # 첫 번째 발생만 변경
@@ -49,7 +50,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
             # "/media/" 제거
             if decoded_url.startswith("/media/"):
-                decoded_url = decoded_url[len("/media/"):]
+                decoded_url = decoded_url[len("/media/") :]
 
             # ":/"를 "://"로 수정
             decoded_url = decoded_url.replace(":/", "://", 1)  # 첫 번째 발생만 변경
