@@ -30,6 +30,7 @@ class AllowExpiredTokenPermission(BasePermission):
         # 그 외에는 기본 인증된 사용자만 접근 가능
         return request.user and request.user.is_authenticated
 
+
 # 토큰 재발급시 액세스토큰이 만료 되있어도 그이후 로직이 수행되도록 인증을 풀어줌
 class CustomAuthenticationToken(JWTAuthentication):
     """
@@ -144,6 +145,7 @@ class RefreshTokenSerializer(serializers.Serializer):
                 logger.error(f"리프레시 토큰 블랙리스트 처리 중 오류 발생: {str(e)}")
         outstanding_tokens.delete()
 
+
 class SocialLoginSerializer(serializers.Serializer):
     """소셜 로그인 공통 시리얼라이저"""
 
@@ -216,7 +218,7 @@ class SocialLoginSerializer(serializers.Serializer):
         """
         if profile_image_url and profile_image_url.startswith("/media/"):
             # Remove "/media/" and decode the URL-encoded characters
-            clean_url = profile_image_url[len("/media/"):]
+            clean_url = profile_image_url[len("/media/") :]
             return requests.utils.unquote(clean_url)
         return profile_image_url
 
