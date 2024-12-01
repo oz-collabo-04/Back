@@ -27,6 +27,7 @@ from users.oauth_serializers import (
 from users.seriailzers import UserInfoSerializer
 
 
+# 소셜로그인 공통부분
 class SocialLoginAPIView(APIView):
     """공통 소셜 로그인 처리 뷰"""
 
@@ -47,6 +48,7 @@ class SocialLoginAPIView(APIView):
             500: {"type": "object", "description": "소셜 API 호출 실패"},
         },
     )
+    # provider(공급자) -> naver, kakao, goggle
     def post(self, request, provider, *args, **kwargs):
         code = request.data.get("code")
         state = request.data.get("state")  # 네이버 인증용

@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
 
+from django.contrib.sites import requests
 from rest_framework import serializers
 from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -29,7 +30,7 @@ class AllowExpiredTokenPermission(BasePermission):
         # 그 외에는 기본 인증된 사용자만 접근 가능
         return request.user and request.user.is_authenticated
 
-
+# 토큰 재발급시 액세스토큰이 만료 되있어도 그이후 로직이 수행되도록 인증을 풀어줌
 class CustomAuthenticationToken(JWTAuthentication):
     """
     특정 API 경로에서 만료된 액세스 토큰을 허용하는 커스텀 인증 클래스.
@@ -143,7 +144,6 @@ class RefreshTokenSerializer(serializers.Serializer):
                 logger.error(f"리프레시 토큰 블랙리스트 처리 중 오류 발생: {str(e)}")
         outstanding_tokens.delete()
 
-
 class SocialLoginSerializer(serializers.Serializer):
     """소셜 로그인 공통 시리얼라이저"""
 
@@ -177,32 +177,48 @@ class SocialLoginSerializer(serializers.Serializer):
         else:
             formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
 
-        return formatted_phone_number
+        return phone_number
 
     def save(self, **kwargs):
         """
         사용자 생성 또는 업데이트
-        - 소셜 로그인 사용자 정보를 저장하거나 기존 사용자 업데이트.
+        - 이메일을 기준으로 사용자 정보를 저장하거나 기존 사용자 업데이트.
         """
         validated_data = {**self.validated_data, **kwargs}
         email = validated_data["email"]
         name = validated_data.get("name", "")
-        profile_image = validated_data.get("profile_image", "")
+        profile_image = self._clean_profile_image(validated_data.get("profile_image", ""))
         phone_number = validated_data.get("phone_number", "")
 
-        user = User.objects.filter(email=email).first() or User.objects.filter(phone_number=phone_number).first()
+        # 이메일을 기준으로 사용자 검색
+        user = User.objects.filter(email=email).first()
+
         if user:
+            # 기존 사용자 업데이트
             user.name = name or user.name
             user.profile_image = profile_image or user.profile_image
             user.phone_number = phone_number or user.phone_number
-            user.is_active = True
+            user.is_active = True  # 활성화 상태 설정
         else:
+            # 새로운 사용자 생성
             user = User(email=email, name=name, profile_image=profile_image, phone_number=phone_number)
+
         user.save()
 
+        # 기존 리프레시 토큰 블랙리스트 처리
         self._blacklist_existing_refresh_tokens(user)
 
         return user
+
+    def _clean_profile_image(self, profile_image_url):
+        """
+        소셜 로그인 프로필 이미지 URL을 정리하여 저장.
+        """
+        if profile_image_url and profile_image_url.startswith("/media/"):
+            # Remove "/media/" and decode the URL-encoded characters
+            clean_url = profile_image_url[len("/media/"):]
+            return requests.utils.unquote(clean_url)
+        return profile_image_url
 
     def _blacklist_existing_refresh_tokens(self, user):
         """
