@@ -1,11 +1,15 @@
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status
+from rest_framework import generics, mixins, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from notifications.models import Notification
-from notifications.serializers.notification_serializers import NotificationSerializer
+from notifications.serializers.notification_serializers import (
+    NotificationReadSerializer,
+    NotificationSerializer,
+)
 
 
 @extend_schema(tags=["Notification"])
@@ -19,45 +23,38 @@ class NotificationListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Notification.objects.filter(receiver_id=user.id)
+        return Notification.objects.filter(receiver_id=user.id, is_read=False)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        unread_count = queryset.filter(is_read=False).count()
         serializer = self.get_serializer(queryset, many=True)
-        return Response({"unread_count": unread_count, "notifications": serializer.data})
+        return Response({"unread_count": queryset.count(), "notifications": serializer.data})
 
 
 @extend_schema(tags=["Notification"])
-class NotificationDetailAPIView(generics.UpdateAPIView):
+class NotificationDetailAPIView(generics.GenericAPIView, mixins.UpdateModelMixin):
     """
     특정 알림 읽음 처리 API
     """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = NotificationSerializer
+    serializer_class = NotificationReadSerializer
 
     def get_object(self):
         notification_id = self.kwargs.get("notification_id")
         return get_object_or_404(Notification, id=notification_id, receiver_id=self.request.user.id)
 
     def patch(self, request, *args, **kwargs):
-        notification = self.get_object()
-        serializer = self.get_serializer(notification, data={"is_read": True}, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.partial_update(request, *args, **kwargs)
 
 
 @extend_schema(tags=["Notification"])
-class NotificationReadAllAPIView(generics.UpdateAPIView):
+class NotificationReadAllAPIView(APIView):
     """
     전체 알림 읽음 처리 API
     """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = NotificationSerializer
 
     def update(self, request, *args, **kwargs):
         user = request.user

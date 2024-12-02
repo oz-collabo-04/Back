@@ -117,3 +117,5 @@ GENDER_CHOICES = [
 ]
 
 REQUEST_STATUS_CHOICES = [("pending", "견적 요청중"), ("completed", "견적 받기 완료"), ("canceled", "견적 요청 취소")]
+
+VALID_LOCATION = [item[0] for item in AREA_CHOICES]

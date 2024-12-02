@@ -13,6 +13,7 @@ poetry run isort ../src
 echo "OK"
 
 echo "Starting test with coverage"
-poetry run coverage run --source="../src" ../src/manage.py test
+cd ../src
+poetry run coverage run --source="src" manage.py test
 
 echo "${COLOR_GREEN}All tests passed successfully!${COLOR_NC}"
