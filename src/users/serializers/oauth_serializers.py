@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 from django.contrib.sites import requests
 from rest_framework import serializers
-
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
@@ -13,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.exceptions import BadRequestException
 from common.logging_config import logger
 from users.models import User
+
 
 class AccessTokenSerializer(serializers.Serializer):
     """
