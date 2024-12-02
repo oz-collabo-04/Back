@@ -18,13 +18,11 @@ from common.exceptions import (
 )
 from common.logging_config import logger
 from users.models import User
-from users.oauth_serializers import (
-    AllowExpiredTokenPermission,
-    CustomAuthenticationToken,
+from users.serializers.oauth_serializers import (
     RefreshTokenSerializer,
     SocialLoginSerializer,
 )
-from users.seriailzers import UserInfoSerializer
+from users.serializers.user_serializers import UserInfoSerializer
 
 
 # 소셜로그인 공통부분
@@ -82,7 +80,7 @@ class SocialLoginAPIView(APIView):
             response = Response(response_data, status=status.HTTP_200_OK)
 
             # Refresh Token을 쿠키로 설정
-            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="Lax")
+            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="None")
             return response
         except Exception as e:
             logger.error(f"{provider} 로그인 처리 중 오류 발생: {str(e)}")
@@ -180,9 +178,6 @@ class RefreshAccessTokenAPIView(APIView):
     """
     리프레시 토큰을 이용한 Access Token 갱신 API View.
     """
-
-    permission_classes = (AllowExpiredTokenPermission,)
-    authentication_classes = (CustomAuthenticationToken,)
 
     @extend_schema(
         tags=["Oauth"],
