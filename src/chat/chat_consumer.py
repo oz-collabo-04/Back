@@ -1,5 +1,7 @@
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from chat.models import Message
 from common.logging_config import logger
 
 
@@ -36,33 +38,34 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content, **kwargs):
         try:
-            message = content.get("message", "")
-            email = content.get("email", "Anonymous")
-
-            if not message or not email:
-                await self.send_json({"error": "Invalid data received."})
+            if not await self.validate_content(content):
                 return
 
-            await self.channel_layer.group_send(
-                self.room_group_name, {"type": "chat_message", "message": message, "email": email}
-            )
+            content["sender_id"] = self.scope["user"].id
+            # message save to db
+            await sync_to_async(Message.objects.create)(room_id=self.room_id, sender_id=content["sender_id"], **kwargs)
+
+            content["type"] = "chat_message"
+
+            await self.channel_layer.group_send(self.room_group_name, content)
         except Exception as e:
             # 에러 로그 출력 (필요 시 로그 저장 가능)
             logger.error(f"Error in receive_json: {e}")
             # 에러 메시지 클라이언트로 전송 (선택 사항)
             await self.send_json({"error": "Message delivery failed."})
 
+    async def error(self, detail):
+        await self.send_json({"type": "error", "detail": detail})
+
     async def disconnect(self, code):
         # 그룹에서 제거
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def chat_message(self, content, **kwargs):
-        message = content.get("message", "")
-        email = content.get("email", "Anonymous")
-        await self.send_json(
-            {
-                "type": "chat_message",
-                "message": message,
-                "email": email,
-            }
-        )
+        await self.send_json(content)
+
+    async def validate_content(self, content):
+        if not content.get("content"):
+            await self.error(detail="message required.")
+            return False
+        return True
