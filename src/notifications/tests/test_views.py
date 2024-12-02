@@ -1,10 +1,11 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase, APIClient
-from rest_framework import status
 from django.contrib.auth import get_user_model
-from notifications.models import Notification
-from expert.models import Expert
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient, APITestCase
+
 from estimations.models import EstimationsRequest
+from expert.models import Expert
+from notifications.models import Notification
 
 User = get_user_model()
 

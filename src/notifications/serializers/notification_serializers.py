@@ -17,8 +17,9 @@ class NotificationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("내용은 100자를 초과할 수 없습니다.")
         return data
 
-    def update(self, instance, validated_data):
-        # 읽음 처리 구현
-        instance.is_read = validated_data.get("is_read", instance.is_read)
-        instance.save()
-        return instance
+
+class NotificationReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = "__all__"
+        read_only_fields = ("id", "title", "message", "notification_type", "created_at")
