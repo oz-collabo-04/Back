@@ -3,80 +3,16 @@ from datetime import datetime, timezone
 
 from django.contrib.sites import requests
 from rest_framework import serializers
-from rest_framework.permissions import BasePermission
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
+
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from common.exceptions import BadRequestException, UnauthorizedException
+from common.exceptions import BadRequestException
 from common.logging_config import logger
 from users.models import User
-
-
-class AllowExpiredTokenPermission(BasePermission):
-    """
-    특정 API 경로에서 만료된 토큰을 허용하는 권한 클래스.
-    - /api/v1/users/token/refresh/ 경로에서는 만료된 토큰도 검증을 허용함.
-    """
-
-    def has_permission(self, request, view):
-        # 특정 경로에서는 만료된 토큰 허용
-        if request.path == "/api/v1/users/token/refresh/":
-            return True
-        # 그 외에는 기본 인증된 사용자만 접근 가능
-        return request.user and request.user.is_authenticated
-
-
-# 토큰 재발급시 액세스토큰이 만료 되있어도 그이후 로직이 수행되도록 인증을 풀어줌
-class CustomAuthenticationToken(JWTAuthentication):
-    """
-    특정 API 경로에서 만료된 액세스 토큰을 허용하는 커스텀 인증 클래스.
-    - /api/v1/users/token/refresh/ 경로에서는 만료된 토큰도 디코딩할 수 있도록 처리.
-    """
-
-    def authenticate(self, request):
-        header = self.get_header(request)  # Authorization 헤더 가져오기
-        raw_token = self.get_raw_token(header)  # 토큰 값 추출
-
-        # 특정 경로에서는 Authorization 헤더가 없어도 동작 가능하도록 설정
-        if request.path == "/api/v1/users/token/refresh/":
-            if not header or not raw_token:
-                return None
-
-        # Authorization 헤더가 없을 경우 예외 처리
-        if not header:
-            raise UnauthorizedException(
-                detail="Authorization 헤더가 누락되었습니다.", code="MISSING_AUTHORIZATION_HEADER"
-            )
-
-        # 유효한 토큰 값이 없을 경우 예외 처리
-        if not raw_token:
-            raise UnauthorizedException(
-                detail="Authorization 헤더에 유효한 토큰이 포함되어 있지 않습니다.", code="INVALID_AUTHORIZATION_HEADER"
-            )
-
-        try:
-            # 기본 토큰 유효성 검증
-            validated_token = self.get_validated_token(raw_token)
-            return self.get_user(validated_token), validated_token
-        except InvalidToken as e:
-            # 만료된 토큰 처리 (특정 경로에 한함)
-            if request.path == "/api/v1/users/token/refresh/":
-                try:
-                    # 만료 여부 무시하고 토큰 디코딩
-                    token = AccessToken(raw_token, verify=False)
-                    return None, token
-                except InvalidToken:
-                    raise UnauthorizedException(
-                        detail="유효하지 않은 액세스 토큰입니다.", code="INVALID_ACCESS_TOKEN"
-                    ) from e
-            else:
-                raise UnauthorizedException(detail="유효하지 않은 액세스 토큰입니다.", code="INVALID_ACCESS_TOKEN")
-
 
 class AccessTokenSerializer(serializers.Serializer):
     """

@@ -1,7 +1,7 @@
 from django.urls import path
 
-from users import views
-from users.oauth_views import LogoutView, RefreshAccessTokenAPIView, SocialLoginAPIView
+from users.views import user_views
+from users.views.oauth_views import LogoutView, RefreshAccessTokenAPIView, SocialLoginAPIView
 
 app_name = "users"
 urlpatterns = [
@@ -10,6 +10,6 @@ urlpatterns = [
     path("token/refresh/", RefreshAccessTokenAPIView.as_view(), name="refresh_token"),
     path("logout/", LogoutView.as_view(), name="logout"),
     # user
-    path("mypage/", views.UserEditView.as_view(), name="user_mypage"),
-    path("mypage/deactivate/", views.UserDeactivateView.as_view(), name="user_deactivate"),
+    path("mypage/", user_views.UserEditView.as_view(), name="user_mypage"),
+    path("mypage/deactivate/", user_views.UserDeactivateView.as_view(), name="user_deactivate"),
 ]
