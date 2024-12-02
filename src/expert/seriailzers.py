@@ -1,5 +1,3 @@
-import json
-
 from django.db import transaction
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -112,6 +110,23 @@ class ExpertSerializer(serializers.ModelSerializer):
             user.save()
 
             return expert
+
+    def update(self, instance, validated_data):
+        """
+        전문가 생성 시 경력사항을 함께 생성하기 위해 transaction 사용.
+        """
+        careers_data = validated_data.pop("careers", [])
+
+        with transaction.atomic():
+            # 기존의 전문가 커리어 삭제
+            Career.objects.filter(expert=instance).delete()
+
+            # 새로운 Career 객체 생성
+            Career.objects.bulk_create([Career(expert=instance, **career) for career in careers_data])
+
+            instance = super().update(instance, validated_data)
+
+            return instance
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
