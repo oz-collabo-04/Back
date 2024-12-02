@@ -1,7 +1,11 @@
 from django.urls import path
 
 from users.views import user_views
-from users.views.oauth_views import LogoutView, RefreshAccessTokenAPIView, SocialLoginAPIView
+from users.views.oauth_views import (
+    LogoutView,
+    RefreshAccessTokenAPIView,
+    SocialLoginAPIView,
+)
 
 app_name = "users"
 urlpatterns = [
