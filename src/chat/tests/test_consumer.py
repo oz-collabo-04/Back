@@ -1,3 +1,5 @@
+import asyncio
+
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from channels.routing import URLRouter
@@ -82,7 +84,7 @@ class ChatConsumerTransactionTest(TransactionTestCase):
         user_communicator.scope["user"] = user
         user_communicator.scope["type"] = "websocket"
 
-        expert_communicator.scope["user"] = user
+        expert_communicator.scope["user"] = expert
         expert_communicator.scope["type"] = "websocket"
 
         # When: WebSocket 연결 시도
@@ -93,19 +95,24 @@ class ChatConsumerTransactionTest(TransactionTestCase):
         assert connected
 
         # Given: 메시지 전송
-        message = {"message": "Hello, World!", "email": user.email}
+        message_content = "Hello, World!"
+        message = {"content": message_content}
         await user_communicator.send_json_to(message)
 
         # Then: 메시지 수신 확인
-        user_response = await user_communicator.receive_json_from()
-        expert_response = await expert_communicator.receive_json_from()
-        assert user_response["type"] == "chat_message"
-        assert user_response["message"] == message["message"]
-        assert user_response["email"] == message["email"]
+        try:
+            user_response = await asyncio.wait_for(user_communicator.receive_json_from(), timeout=5)
+            expert_response = await asyncio.wait_for(expert_communicator.receive_json_from(), timeout=5)
 
-        assert expert_response["type"] == "chat_message"
-        assert expert_response["message"] == message["message"]
-        assert expert_response["email"] == message["email"]
+            self.assertEqual(user_response["type"], "chat_message")
+            self.assertEqual(user_response["content"], message_content)
+            self.assertEqual(user_response["sender_id"], user.id)
+
+            self.assertEqual(expert_response["type"], "chat_message")
+            self.assertEqual(expert_response["content"], message_content)
+            self.assertEqual(expert_response["sender_id"], user.id)
+        except asyncio.TimeoutError:
+            self.fail("WebSocket에서 메시지를 받는 데 실패했습니다 (타임아웃 발생).")
 
         # Finally: WebSocket 연결 종료
         await user_communicator.disconnect()

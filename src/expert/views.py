@@ -1,7 +1,6 @@
 import json
 import random
 
-from django.http import QueryDict
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -17,7 +16,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.logging_config import logger
+from common.exceptions import BadRequestException
 from expert.models import Career, Expert
 from expert.seriailzers import CareerSerializer, ExpertSerializer
 
@@ -44,7 +43,7 @@ class ExpertCreateView(CreateAPIView):
             careers = json.loads(careers)
 
         request_data = {
-            "available_location": request.data.get("available_location", []),
+            "available_location": request.data.getlist("available_location", []),
             "appeal": request.data.get("appeal", []),
             "service": request.data.get("service", []),
             "careers": careers,
@@ -162,6 +161,41 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 
+    def update(self, request, *args, **kwargs):
+        request_data = {}
+
+        careers = request.data.get("careers", [])
+        if careers:
+            careers = json.loads(careers)
+            request_data["careers"] = careers
+
+        available_location = request.data.getlist("available_location", [])
+        if available_location:
+            request_data["available_location"] = available_location
+
+        appeal = request.data.get("appeal", "")
+        if appeal:
+            request_data["appeal"] = appeal
+
+        service = request.data.get("service", "")
+        if service:
+            request_data["service"] = service
+
+        expert_image = request.data.get("expert_image", None)
+        if expert_image:
+            request_data["expert_image"] = expert_image
+
+        if not request_data:
+            raise BadRequestException("아무런 데이터도 제공되지 않았습니다.")
+
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request_data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
     @extend_schema(
         tags=["Expert"],
         summary="전문가 정보 부분 수정 - 본인만",
@@ -173,9 +207,19 @@ class ExpertDetailView(RetrieveUpdateDestroyAPIView):
     @extend_schema(
         tags=["X"],
         summary="소프트 딜리트 사용으로 - 사용하지 않는 api",
+        description="전문가 정보를 삭제하며, 연관된 user의 is_expert를 False로 변경합니다.",
+        responses={204: OpenApiTypes.OBJECT},
     )
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        instance = self.get_object()
+        # 연결된 user의 is_expert 속성을 False로 변경
+        user = instance.user
+        user.is_expert = False
+        user.save()
+
+        # 전문가 정보 삭제
+        instance.delete()
+        return Response({"detail": "전문가 정보가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 
 class CareerListViews(ListCreateAPIView):
@@ -220,15 +264,3 @@ class CareerListViews(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(expert=expert)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @extend_schema(
-        tags=["Expert"],
-        summary="전문가 경력 일괄 수정 - 본인만",
-        responses=CareerSerializer(),
-    )
-    def put(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # 로그인한 사용자와 경력의 소유자가 일치하는지 확인
-        if request.user != instance.expert.user:
-            raise PermissionDenied("본인의 경력 정보만 수정할 수 있습니다.")
-        return self.update(request, *args, **kwargs)

@@ -55,32 +55,33 @@ class Command(BaseCommand):
 
     def create_superuser(self, fake):
         print("Creating superuser and Expert profile...")
+        if not User.objects.filter(email="admin@example.com").exists():
+            superuser = User.objects.create_user(
+                email="admin@example.com",
+                password="admin1234",
+                name=fake.name(),
+                phone_number=f"010-{random.randint(1111, 9999)}-{random.randint(1111, 9999)}",
+                gender=random.choice(GENDER_CHOICES)[0],
+                profile_image=fake.image_url(width=200, height=200),
+                is_superuser=True,
+                is_active=True,
+                is_staff=True,
+                is_expert=True,
+            )
 
-        superuser = User.objects.create_user(
-            email="admin@example.com",
-            password="admin1234",
-            name=fake.name(),
-            phone_number=f"010-{random.randint(1111, 9999)}-{random.randint(1111, 9999)}",
-            gender=random.choice(GENDER_CHOICES)[0],
-            profile_image=fake.image_url(width=200, height=200),
-            is_superuser=True,
-            is_active=True,
-            is_staff=True,
-            is_expert=True,
-        )
+            Expert.objects.create(
+                user=superuser,
+                expert_image=fake.image_url(width=200, height=200),
+                service=random.choice(SERVICE_CHOICES)[0],
+                standard_charge=random.randint(100000, 900000),
+                available_location=random.choice(AREA_CHOICES)[0],
+                appeal=fake.paragraph(nb_sentences=5),
+            )
+            print(f"Superuser created: {superuser.email}")
+            print(f"Expert profile created for superuser.")
 
-        Expert.objects.create(
-            user=superuser,
-            expert_image=fake.image_url(width=200, height=200),
-            service=random.choice(SERVICE_CHOICES)[0],
-            standard_charge=random.randint(100000, 900000),
-            available_location=random.choice(AREA_CHOICES)[0],
-            appeal=fake.paragraph(nb_sentences=5),
-        )
-        print(f"Superuser created: {superuser.email}")
-        print(f"Expert profile created for superuser.")
-
-        return superuser
+            return superuser
+        return User.objects.filter(email="admin@example.com").first()
 
     def create_request_by_admin(self, fake, admin):
         print("Creating Estimation Requests...")

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.logging_config import logger
-from users.seriailzers import UserSerializer
+from users.serializers.user_serializers import UserSerializer
 
 
 # 유저 상세내역, 정보수정, 삭제 뷰

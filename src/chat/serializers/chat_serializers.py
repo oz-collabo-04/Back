@@ -3,8 +3,7 @@ from rest_framework import serializers
 from chat.models import ChatRoom, Message
 from estimations.serializers.guest_seriailzers import EstimationsRequestSerializer
 from reservations.seriailzers import ExpertInfoSerializer
-from users.models import User
-from users.seriailzers import UserSerializer
+from users.serializers.user_serializers import UserSerializer
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):

@@ -1,13 +1,8 @@
-from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django_redis import get_redis_connection
 
 from estimations.models import Estimation
 from notifications.models import Notification
-
-channel_layer = get_channel_layer()
-redis_conn = get_redis_connection("default")
 
 
 @receiver(post_save, sender=Estimation)

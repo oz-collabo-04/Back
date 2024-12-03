@@ -24,10 +24,14 @@ DATABASES = {
     }
 }
 
-# Static files (CSS, JavaScript, Images)
-
+# Static
 STATIC_URL = "static/"
+STATIC_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / ".static_root"
 
+# Media
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # OAuth
 NAVER_CLIENT_ID = ENV.get("NAVER_CLIENT_ID", "")

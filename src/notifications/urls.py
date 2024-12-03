@@ -1,6 +1,6 @@
 from django.urls import path
 
-from notifications.views import (
+from notifications.views.notification_views import (
     NotificationDetailAPIView,
     NotificationListAPIView,
     NotificationReadAllAPIView,
