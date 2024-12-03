@@ -21,7 +21,7 @@ class MessageSignalTest(TestCase):
             email="testuser@example.com",
             name="유저",
             phone_number="01012345678",
-            gender="male",
+            gender="M",
             is_active=True,
         )
 
@@ -29,7 +29,7 @@ class MessageSignalTest(TestCase):
             email="expertuser@example.com",
             name="전문가",
             phone_number="01087654321",
-            gender="male",
+            gender="M",
             is_active=True,
         )
 
@@ -42,7 +42,7 @@ class MessageSignalTest(TestCase):
             expert_image="path/to/expert_image.jpg",
             service="mc",
             standard_charge=100000,
-            available_location="Seoul",
+            available_location="seoul",
             appeal="경험 많은 웨딩 전문가입니다.",
         )
 
@@ -50,7 +50,7 @@ class MessageSignalTest(TestCase):
         self.estimation_request = EstimationsRequest.objects.create(
             user=self.user,
             service_list="mc",
-            prefer_gender="male",
+            prefer_gender="M",
             status="pending",
             location="Seoul",
             wedding_datetime="2024-12-12",

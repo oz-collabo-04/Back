@@ -20,7 +20,7 @@ def request_post_save_handler(sender, instance, created, **kwargs):
         experts = Expert.objects.filter(
             service__in=service_list,
             user__gender=request.prefer_gender,
-            available_location=request.location,
+            available_location=[request.location],
         )
 
         # 전문가들에게 알림 생성

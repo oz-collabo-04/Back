@@ -1,18 +1,17 @@
 from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.test import TestCase
 
+import common.signals  # 시그널을 명시적으로 등록
 from estimations.models import Estimation, EstimationsRequest
-from expert.models import Expert
+from expert.models import Career, Expert
 from notifications.models import Notification
 
 User = get_user_model()
 
 
-class EstimationSignalTest(TestCase):
+class EstimationRequestNotificationSignalTest(TestCase):
     def setUp(self):
-        # Given: 사용자와 관련 모델 초기화
+        # Given: 사용자와 전문가 초기화
         self.user = User.objects.create_user(
             email="testuser@example.com",
             name="유저",
@@ -27,6 +26,7 @@ class EstimationSignalTest(TestCase):
             phone_number="01087654321",
             gender="M",
             is_active=True,
+            is_expert=True,
         )
 
         # 전문가 생성
@@ -39,29 +39,21 @@ class EstimationSignalTest(TestCase):
             appeal="경험 많은 웨딩 전문가입니다.",
         )
 
-        # 견적 요청 생성
-        self.estimation_request = EstimationsRequest.objects.create(
+    def test_notification_created_on_estimations_request_creation(self):
+        # Given: EstimationsRequest 생성
+        estimation_request = EstimationsRequest.objects.create(
             user=self.user,
             service_list="mc",
             prefer_gender="M",
             status="pending",
             location="seoul",
             wedding_datetime="2024-12-12",
+            wedding_hall="테스트 결혼식장",
         )
 
-    def test_notification_created_on_estimation_create(self):
-        # Given: 전문가가 견적서를 생성합니다.
-        estimation = Estimation.objects.create(
-            request=self.estimation_request,
-            expert=self.expert,
-            service="mc",
-            location="seoul",
-            due_date="2024-12-20",
-            charge=150000,
-        )
+        # Then: 관련 전문가에게 알림이 생성되어야 함
+        notification_exists = Notification.objects.filter(
+            receiver=self.expert_user, notification_type="estimation_request"
+        ).exists()
 
-        # When: post_save 시그널이 트리거됩니다.
-        # Then: 수신자를 위한 알림이 생성되어야 합니다.
-        notification_exists = Notification.objects.filter(receiver=self.user, notification_type="estimation").exists()
-
-        self.assertTrue(notification_exists, "견적서가 생성되면 알림이 생성되어야 합니다.")
+        self.assertTrue(notification_exists, "견적 요청이 생성되면 전문가에게 알림이 생성되어야 합니다.")

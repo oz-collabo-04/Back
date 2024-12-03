@@ -76,7 +76,7 @@ class NotificationAPITestCase(APITestCase):
     def test_notification_detail_api(self):
         # When: 특정 알림 읽음 처리 API 호출
         url = reverse("notification-detail", args=[self.notification.id])
-        response = self.client.patch(url)
+        response = self.client.patch(url, data={"is_read": True})
 
         # Then: 응답 상태 코드 확인
         self.assertEqual(response.status_code, status.HTTP_200_OK)
