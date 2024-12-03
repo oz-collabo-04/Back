@@ -137,5 +137,3 @@ class ExpertSerializer(serializers.ModelSerializer):
             ret["available_location_display"] = [dict(AREA_CHOICES).get(location) for location in location_list]
 
         return ret
-
-
