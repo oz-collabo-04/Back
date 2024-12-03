@@ -16,6 +16,7 @@ class ExpertSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     careers = CareerSerializer(many=True)
     service_display = serializers.SerializerMethodField()
+    available_location = serializers.MultipleChoiceField(choices=AREA_CHOICES)
     available_location_display = serializers.SerializerMethodField()
 
     class Meta:

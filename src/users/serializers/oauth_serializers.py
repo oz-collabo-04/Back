@@ -1,7 +1,10 @@
+import os
 import re
+import uuid
 from datetime import datetime, timezone
+from urllib.request import urlopen
 
-from django.contrib.sites import requests
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
@@ -125,11 +128,14 @@ class SocialLoginSerializer(serializers.Serializer):
         validated_data = {**self.validated_data, **kwargs}
         email = validated_data["email"]
         name = validated_data.get("name", "")
-        profile_image = self._clean_profile_image(validated_data.get("profile_image", ""))
+        profile_image_url = validated_data.get("profile_image", "")
         phone_number = validated_data.get("phone_number", "")
 
         # 이메일을 기준으로 사용자 검색
         user = User.objects.filter(email=email).first()
+
+        # 프로필 이미지 다운로드 후 경로 저장
+        profile_image = self._download_profile_image(profile_image_url) if profile_image_url else None
 
         if user:
             # 기존 사용자 업데이트
@@ -139,7 +145,12 @@ class SocialLoginSerializer(serializers.Serializer):
             user.is_active = True  # 활성화 상태 설정
         else:
             # 새로운 사용자 생성
-            user = User(email=email, name=name, profile_image=profile_image, phone_number=phone_number)
+            user = User(
+                email=email,
+                name=name,
+                profile_image=profile_image,
+                phone_number=phone_number,
+            )
 
         user.save()
 
@@ -148,15 +159,25 @@ class SocialLoginSerializer(serializers.Serializer):
 
         return user
 
-    def _clean_profile_image(self, profile_image_url):
+    def _download_profile_image(self, url):
         """
-        소셜 로그인 프로필 이미지 URL을 정리하여 저장.
+        주어진 URL에서 이미지를 다운로드하여 Django의 MEDIA_ROOT에 저장하고 경로를 반환.
         """
-        if profile_image_url and profile_image_url.startswith("/media/"):
-            # Remove "/media/" and decode the URL-encoded characters
-            clean_url = profile_image_url[len("/media/") :]
-            return requests.utils.unquote(clean_url)
-        return profile_image_url
+        try:
+            # url 이미지 다운
+            response = urlopen(url)
+            image_data = response.read()
+
+            original_name = os.path.basename(url)
+            new_name = f"{original_name}{uuid.uuid4().hex}.jpg"
+
+            image_file = ContentFile(image_data)
+            image_file.name = new_name
+
+            return image_file
+        except Exception as e:
+            logger.error(f"이미지 다운로드 실패: {str(e)}")
+            return None
 
     def _blacklist_existing_refresh_tokens(self, user):
         """
