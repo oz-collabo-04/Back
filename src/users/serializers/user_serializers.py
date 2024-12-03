@@ -1,59 +1,193 @@
-import urllib.parse
 
+import os
+import re
+import uuid
+from datetime import datetime, timezone
+from urllib.request import urlopen
+
+from django.core.files.base import ContentFile
 from rest_framework import serializers
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from common.exceptions import BadRequestException
+from common.logging_config import logger
 from users.models import User
 
 
-class UserSerializer(serializers.ModelSerializer):
-    profile_image = serializers.SerializerMethodField()
+class AccessTokenSerializer(serializers.Serializer):
+    """
+    Access Token 생성 Serializer.
+    """
 
-    class Meta:
-        model = User
-        fields = ["id", "email", "name", "gender", "phone_number", "profile_image", "prefer_service", "prefer_location"]
-        read_only_fields = ("id", "email")
-
-    def get_profile_image(self, obj):
+    def create_access_token(self, user):
         """
-        profile_image 필드가 URL 형식인지 확인하고, 디코딩 후 /media/ 제거 및 :/를 ://로 수정.
+        새로운 Access Token을 생성.
         """
-        if obj.profile_image:
-            # URL 디코딩 처리
-            decoded_url = urllib.parse.unquote(obj.profile_image.url)
+        if not user:
+            raise BadRequestException("유효하지 않은 사용자입니다.", code="INVALID_USER")
 
-            # "/media/" 제거
-            if decoded_url.startswith("/media/"):
-                decoded_url = decoded_url[len("/media/") :]
-
-            # ":/"를 "://"로 수정
-            decoded_url = decoded_url.replace(":/", "://", 1)  # 첫 번째 발생만 변경
-
-            return decoded_url
-        return None  # 이미지가 없을 경우
+        # 새 Access Token 생성
+        refresh = RefreshToken.for_user(user)
+        return str(refresh.access_token)
 
 
-class UserInfoSerializer(serializers.ModelSerializer):
-    profile_image = serializers.SerializerMethodField()
+class RefreshTokenSerializer(serializers.Serializer):
+    """
+    리프레시 토큰 직렬화기
+    - 리프레시 토큰의 유효성을 검증하고 새로운 토큰을 발급.
+    """
 
-    class Meta:
-        model = User
-        fields = ["id", "email", "name", "profile_image", "is_expert"]
-        read_only_fields = ("id", "email")
+    refresh_token = serializers.CharField(max_length=512, write_only=True, help_text="발급된 리프레시 토큰")
 
-    def get_profile_image(self, obj):
+    def validate_refresh_token(self, value):
         """
-        UserInfoSerializer에서도 동일하게 profile_image 처리.
+        리프레시 토큰 유효성 검증
         """
-        if obj.profile_image:
-            # URL 디코딩 처리
-            decoded_url = urllib.parse.unquote(obj.profile_image.url)
+        if not value:
+            raise BadRequestException("리프레시 토큰이 필요합니다.", code="MISSING_REFRESH_TOKEN")
 
-            # "/media/" 제거
-            if decoded_url.startswith("/media/"):
-                decoded_url = decoded_url[len("/media/") :]
+        if len(value) > 512:
+            raise BadRequestException("리프레시 토큰의 길이가 너무 깁니다.", code="REFRESH_TOKEN_TOO_LONG")
 
-            # ":/"를 "://"로 수정
-            decoded_url = decoded_url.replace(":/", "://", 1)  # 첫 번째 발생만 변경
+        try:
+            token = RefreshToken(value)
+        except Exception as e:
+            raise BadRequestException("유효하지 않은 리프레시 토큰입니다.", code="INVALID_REFRESH_TOKEN") from e
 
-            return decoded_url
-        return None
+        exp_timestamp = token["exp"]
+        current_time = datetime.now(tz=timezone.utc).timestamp()
+        if current_time >= exp_timestamp:
+            raise BadRequestException("리프레시 토큰이 만료되었습니다.", code="REFRESH_TOKEN_EXPIRED")
+
+        return value
+
+    def create_refresh_token(self, user):
+        """
+        기존 리프레시 토큰을 제거하고 새로운 리프레시 토큰 생성.
+        """
+        self._blacklist_existing_refresh_tokens(user)
+        refresh = RefreshToken.for_user(user)
+        return str(refresh)
+
+    def _blacklist_existing_refresh_tokens(self, user):
+        """
+        사용자의 기존 리프레시 토큰을 블랙리스트에 추가.
+        """
+        outstanding_tokens = OutstandingToken.objects.filter(user=user)
+        for token in outstanding_tokens:
+            try:
+                BlacklistedToken.objects.get_or_create(token=token)
+            except Exception as e:
+                logger.error(f"리프레시 토큰 블랙리스트 처리 중 오류 발생: {str(e)}")
+        outstanding_tokens.delete()
+
+
+class SocialLoginSerializer(serializers.Serializer):
+    """소셜 로그인 공통 시리얼라이저"""
+
+    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    email = serializers.EmailField(required=True)
+    profile_image = serializers.URLField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+    def validate_email(self, value):
+        if not value:
+            raise BadRequestException("사용자 이메일이 제공되지 않았습니다.", code="missing_email")
+        return value
+
+    def validate_phone_number(self, value):
+        """
+        전화번호 유효성 검증 및 표준화
+        - 전화번호는 항상 010-0000-0000 형태로 변환.
+        """
+        if not value:
+            return None
+
+        phone_number = re.sub(r"[^\d]", "", value)
+        if phone_number.startswith("82"):
+            phone_number = "0" + phone_number[2:]
+
+        if len(phone_number) not in (10, 11):
+            raise BadRequestException("전화번호 형식이 올바르지 않습니다.", code="invalid_phone_number")
+
+        if len(phone_number) == 10:
+            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:6]}-{phone_number[6:]}"
+        else:
+            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
+
+        return phone_number
+
+    def save(self, **kwargs):
+        """
+        사용자 생성 또는 업데이트
+        - 이메일을 기준으로 사용자 정보를 저장하거나 기존 사용자 업데이트.
+        """
+        validated_data = {**self.validated_data, **kwargs}
+        email = validated_data["email"]
+        name = validated_data.get("name", "")
+        profile_image_url = validated_data.get("profile_image", "")
+        phone_number = validated_data.get("phone_number", "")
+
+        # 이메일을 기준으로 사용자 검색
+        user = User.objects.filter(email=email).first()
+
+        # 프로필 이미지 다운로드 후 경로 저장
+        profile_image = self._download_profile_image(profile_image_url) if profile_image_url else None
+
+        if user:
+            # 기존 사용자 업데이트
+            user.name = name or user.name
+            user.profile_image = profile_image or user.profile_image
+            user.phone_number = phone_number or user.phone_number
+            user.is_active = True  # 활성화 상태 설정
+        else:
+            # 새로운 사용자 생성
+            user = User(
+                email=email,
+                name=name,
+                profile_image=profile_image,
+                phone_number=phone_number,
+            )
+
+        user.save()
+
+        # 기존 리프레시 토큰 블랙리스트 처리
+        self._blacklist_existing_refresh_tokens(user)
+
+        return user
+
+    def _download_profile_image(self, url):
+        """
+        주어진 URL에서 이미지를 다운로드하여 Django의 MEDIA_ROOT에 저장하고 경로를 반환.
+        """
+        try:
+            # url 이미지 다운
+            response = urlopen(url)
+            image_data = response.read()
+
+            original_name = os.path.basename(url)
+            new_name = f"{original_name}{uuid.uuid4().hex}.jpg"
+
+            image_file = ContentFile(image_data)
+            image_file.name = new_name
+
+            return image_file
+        except Exception as e:
+            logger.error(f"이미지 다운로드 실패: {str(e)}")
+            return None
+
+    def _blacklist_existing_refresh_tokens(self, user):
+        """
+        유저의 기존 리프레시 토큰을 블랙리스트 처리.
+        """
+        outstanding_tokens = OutstandingToken.objects.filter(user=user)
+        for token in outstanding_tokens:
+            try:
+                BlacklistedToken.objects.get_or_create(token=token)
+            except Exception as e:
+                logger.error(f"토큰 블랙리스트 처리 중 오류 발생: {str(e)}")
+        outstanding_tokens.delete()
