@@ -17,7 +17,3 @@ urlpatterns = [
     path("mypage/", user_views.UserEditView.as_view(), name="user_mypage"),
     path("mypage/deactivate/", user_views.UserDeactivateView.as_view(), name="user_deactivate"),
 ]
-
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
