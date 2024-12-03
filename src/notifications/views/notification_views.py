@@ -56,7 +56,7 @@ class NotificationReadAllAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def update(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         user = request.user
         notifications = Notification.objects.filter(receiver_id=user.id, is_read=False)
         notifications.update(is_read=True)

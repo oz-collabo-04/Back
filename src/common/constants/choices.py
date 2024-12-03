@@ -81,11 +81,9 @@ AREA_CHOICES = [
 ]
 
 RESERVATION_STATUS_CHOICES = [
-    ("pending", "진행중"),
     ("confirmed", "예약 확정"),
-    ("cancel", "예약 취소"),
-    ("cancelling", "취소중"),
-    ("completed", "완료"),
+    ("canceled", "예약 취소"),
+    ("completed", "서비스 완료"),
 ]
 
 RATING_CHOICES = [

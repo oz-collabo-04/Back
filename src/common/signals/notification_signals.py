@@ -23,7 +23,6 @@ def send_notification_signal(sender, instance, created, **kwargs):
                     "message": instance.message,
                     "notification_type": instance.notification_type,
                     "is_read": instance.is_read,
-                    "created_at": instance.created_at,
                 },
             },
         )
