@@ -57,10 +57,15 @@ class SocialLoginAPIView(APIView):
         try:
             # 소셜 액세스 토큰 가져오기
             access_token = self._get_social_access_token(provider, code, state)
+
             # 소셜 사용자 정보 가져오기
             user_info = self._get_social_user_info(provider, access_token)
+            logger.debug(f"Received user_info: {user_info}")
+
             # 사용자 생성/업데이트
             serializer = SocialLoginSerializer(data=user_info)
+            if not serializer.is_valid():
+                logger.error(f"SocialLoginSerializer validation error: {serializer.errors}")
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
 
@@ -152,8 +157,9 @@ class SocialLoginAPIView(APIView):
             return {
                 "name": response_data.get("name", "네이버 사용자"),
                 "email": response_data.get("email"),
-                "profile_image": response_data.get("profile_image"),
-                "phone_number": response_data.get("mobile"),
+                "profile_image": response_data.get("profile_image", ""),
+                "phone_number": response_data.get("mobile", ""),
+                "gender": response_data.get("gender", "F").upper(),
             }
         elif provider == "kakao":
             kakao_account = data.get("kakao_account", {})
@@ -161,14 +167,17 @@ class SocialLoginAPIView(APIView):
             return {
                 "name": profile.get("nickname", "카카오 사용자"),
                 "email": kakao_account.get("email"),
-                "profile_image": profile.get("profile_image_url"),
-                "phone_number": kakao_account.get("phone_number"),
+                "profile_image": profile.get("profile_image_url", ""),
+                "phone_number": kakao_account.get("phone_number", ""),
+                "gender": kakao_account.get("gender", "F").upper(),
+
             }
         elif provider == "google":
             return {
-                "name": data.get("name"),
+                "name": data.get("name", "Google 사용자"),
                 "email": data.get("email"),
-                "profile_image": data.get("picture"),
+                "profile_image": data.get("picture", ""),
+                "gender": data.get("gender", "F").upper(),
             }
         else:
             raise BadRequestException("지원되지 않는 소셜 제공자입니다.", code="unsupported_provider")

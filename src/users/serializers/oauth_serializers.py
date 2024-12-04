@@ -1,7 +1,9 @@
-import os
+from django.db import transaction, IntegrityError
 import re
 import uuid
 from datetime import datetime, timezone
+from mimetypes import guess_extension
+
 from urllib.request import urlopen
 
 from django.core.files.base import ContentFile
@@ -15,6 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.exceptions import BadRequestException
 from common.logging_config import logger
 from users.models import User
+
 
 
 class AccessTokenSerializer(serializers.Serializer):
@@ -85,98 +88,107 @@ class RefreshTokenSerializer(serializers.Serializer):
         outstanding_tokens.delete()
 
 
-class SocialLoginSerializer(serializers.Serializer):
-    """소셜 로그인 공통 시리얼라이저"""
 
-    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    email = serializers.EmailField(required=True)
-    profile_image = serializers.URLField(required=False, allow_blank=True)
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+class SocialLoginSerializer(serializers.ModelSerializer):
+    """
+    소셜 로그인 공통 시리얼라이저
+    """
+    profile_image_url = serializers.URLField(write_only=True, required=False, allow_blank=True, help_text="프로필 이미지 URL")
+    gender = serializers.CharField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ["email", "name", "gender", "phone_number", "profile_image_url"]
+        extra_kwargs = {
+            "email": {
+                "required": True,
+                "validators": [],  # 고유성 검증 제거
+            },
+            "name": {"required": True},
+        }
 
     def validate_email(self, value):
+        # 이메일 유효성은 확인하되, 고유성 검증은 우회
         if not value:
-            raise BadRequestException("사용자 이메일이 제공되지 않았습니다.", code="missing_email")
-        return value
+            raise serializers.ValidationError("이메일은 필수 항목입니다.")
+        return value.strip().lower()
+
+    def validate_gender(self, value):
+        gender = value.strip().upper()
+        if gender in ["MALE", "M"]:
+            return "M"
+        elif gender in ["FEMALE", "F"]:
+            return "F"
+        else:
+            return "F"  # 기본값
 
     def validate_phone_number(self, value):
-        """
-        전화번호 유효성 검증 및 표준화
-        - 전화번호는 항상 010-0000-0000 형태로 변환.
-        """
-        if not value:
-            return None
-
-        phone_number = re.sub(r"[^\d]", "", value)
-        if phone_number.startswith("82"):
+        phone_number = re.sub(r"[^\d]", "", value)  # 숫자만 남기기
+        if phone_number.startswith("82"):  # 국제번호 제거
             phone_number = "0" + phone_number[2:]
 
-        if len(phone_number) not in (10, 11):
-            raise BadRequestException("전화번호 형식이 올바르지 않습니다.", code="invalid_phone_number")
-
-        if len(phone_number) == 10:
-            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:6]}-{phone_number[6:]}"
+        # 전화번호 형식 변환
+        if len(phone_number) == 11:  # 11자리 번호
+            formatted_phone = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
+        elif len(phone_number) == 10:  # 10자리 번호
+            formatted_phone = f"{phone_number[:3]}-{phone_number[3:6]}-{phone_number[6:]}"
         else:
-            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
+            raise serializers.ValidationError("유효한 전화번호 형식이 아닙니다.")
 
-        return phone_number
+        # 전화번호 길이 검증
+        if len(formatted_phone) > 13:
+            raise serializers.ValidationError("전화번호는 13자를 초과할 수 없습니다.")
 
-    def save(self, **kwargs):
-        """
-        사용자 생성 또는 업데이트
-        - 이메일을 기준으로 사용자 정보를 저장하거나 기존 사용자 업데이트.
-        """
-        validated_data = {**self.validated_data, **kwargs}
-        email = validated_data["email"]
-        name = validated_data.get("name", "")
-        profile_image_url = validated_data.get("profile_image", "")
-        phone_number = validated_data.get("phone_number", "")
+        return formatted_phone
 
-        # 이메일을 기준으로 사용자 검색
-        user = User.objects.filter(email=email).first()
+    def validate(self, data):
+        # profile_image_url 처리
+        profile_image_url = data.pop("profile_image_url", None)
+        if profile_image_url:
+            profile_image = self._download_profile_image(profile_image_url)
+            if profile_image:
+                data["profile_image"] = profile_image
 
-        # 프로필 이미지 다운로드 후 경로 저장
-        profile_image = self._download_profile_image(profile_image_url) if profile_image_url else None
+        return data
 
-        if user:
-            # 기존 사용자 업데이트
-            user.name = name or user.name
-            user.profile_image = profile_image or user.profile_image
-            user.phone_number = phone_number or user.phone_number
-            user.is_active = True  # 활성화 상태 설정
-        else:
-            # 새로운 사용자 생성
-            user = User(
-                email=email,
-                name=name,
-                profile_image=profile_image,
-                phone_number=phone_number,
-            )
+    def create(self, validated_data):
+        try:
+            with transaction.atomic():
+                # 이메일을 기반으로 사용자 검색 또는 생성
+                user, created = User.objects.update_or_create(
+                    email=validated_data["email"],
+                    defaults=validated_data,
+                )
 
-        user.save()
+                # 프로필 이미지 처리
+                profile_image = validated_data.get("profile_image")
+                if profile_image:
+                    user.profile_image.save(profile_image.name, profile_image)
+                    user.save()
 
-        # 기존 리프레시 토큰 블랙리스트 처리
-        self._blacklist_existing_refresh_tokens(user)
-
-        return user
+                return user
+        except IntegrityError:
+            raise serializers.ValidationError("이미 동일한 이메일이 존재합니다.")
 
     def _download_profile_image(self, url):
         """
-        주어진 URL에서 이미지를 다운로드하여 Django의 MEDIA_ROOT에 저장하고 경로를 반환.
+        주어진 URL에서 이미지를 다운로드하여 ContentFile로 반환.
         """
         try:
-            # url 이미지 다운
             response = urlopen(url)
             image_data = response.read()
 
-            original_name = os.path.basename(url)
-            new_name = f"{original_name}{uuid.uuid4().hex}.jpg"
+            # 파일 확장자 확인
+            content_type = response.headers.get("Content-Type")
+            extension = guess_extension(content_type.split(";")[0]) if content_type else ".jpg"
 
-            image_file = ContentFile(image_data)
-            image_file.name = new_name
+            # 고유한 파일 이름 생성
+            file_name = f"profile_image_{uuid.uuid4().hex}{extension}"
 
-            return image_file
+            return ContentFile(image_data, name=file_name)
         except Exception as e:
-            logger.error(f"이미지 다운로드 실패: {str(e)}")
+            logger.error(f"Failed to download profile image: {e}")
             return None
 
     def _blacklist_existing_refresh_tokens(self, user):
