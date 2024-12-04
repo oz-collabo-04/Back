@@ -1,10 +1,6 @@
 import re
-import uuid
 from datetime import datetime, timezone
-from mimetypes import guess_extension
-from urllib.request import urlopen
 
-from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.token_blacklist.models import (
@@ -91,15 +87,16 @@ class SocialLoginSerializer(serializers.ModelSerializer):
     소셜 로그인 공통 시리얼라이저
     """
 
-    profile_image_url = serializers.URLField(
-        write_only=True, required=False, allow_blank=True, help_text="프로필 이미지 URL"
-    )
     gender = serializers.CharField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ["email", "name", "gender", "phone_number", "profile_image_url"]
+        fields = ["id", "email", "name", "gender", "phone_number", "profile_image", "is_expert"]
+        read_only_fields = [
+            "id",
+            "is_expert",
+        ]
         extra_kwargs = {
             "email": {
                 "required": True,
@@ -142,16 +139,6 @@ class SocialLoginSerializer(serializers.ModelSerializer):
 
         return formatted_phone
 
-    def validate(self, data):
-        # profile_image_url 처리
-        profile_image_url = data.pop("profile_image_url", None)
-        if profile_image_url:
-            profile_image = self._download_profile_image(profile_image_url)
-            if profile_image:
-                data["profile_image"] = profile_image
-
-        return data
-
     def create(self, validated_data):
         try:
             with transaction.atomic():
@@ -170,26 +157,6 @@ class SocialLoginSerializer(serializers.ModelSerializer):
                 return user
         except IntegrityError:
             raise serializers.ValidationError("이미 동일한 이메일이 존재합니다.")
-
-    def _download_profile_image(self, url):
-        """
-        주어진 URL에서 이미지를 다운로드하여 ContentFile로 반환.
-        """
-        try:
-            response = urlopen(url)
-            image_data = response.read()
-
-            # 파일 확장자 확인
-            content_type = response.headers.get("Content-Type")
-            extension = guess_extension(content_type.split(";")[0]) if content_type else ".jpg"
-
-            # 고유한 파일 이름 생성
-            file_name = f"profile_image_{uuid.uuid4().hex}{extension}"
-
-            return ContentFile(image_data, name=file_name)
-        except Exception as e:
-            logger.error(f"Failed to download profile image: {e}")
-            return None
 
     def _blacklist_existing_refresh_tokens(self, user):
         """
