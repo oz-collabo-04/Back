@@ -1,5 +1,10 @@
+import uuid
+from mimetypes import guess_extension
+from urllib.request import urlopen
+
 import requests
 from django.conf import settings
+from django.core.files.base import ContentFile
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -22,7 +27,6 @@ from users.serializers.oauth_serializers import (
     RefreshTokenSerializer,
     SocialLoginSerializer,
 )
-from users.serializers.user_serializers import UserInfoSerializer
 
 
 # 소셜로그인 공통부분
@@ -57,8 +61,12 @@ class SocialLoginAPIView(APIView):
         try:
             # 소셜 액세스 토큰 가져오기
             access_token = self._get_social_access_token(provider, code, state)
+
             # 소셜 사용자 정보 가져오기
             user_info = self._get_social_user_info(provider, access_token)
+            user_info["profile_image"] = self._download_profile_image(user_info["profile_image"])
+            logger.debug(f"Received user_info: {user_info}")
+
             # 사용자 생성/업데이트
             serializer = SocialLoginSerializer(data=user_info)
             serializer.is_valid(raise_exception=True)
@@ -69,22 +77,40 @@ class SocialLoginAPIView(APIView):
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
 
-            # 사용자 정보 직렬화
-            user_serializer = UserInfoSerializer(user)
-
             # 응답 생성
             response_data = {
                 "access_token": access_token,
-                "user": user_serializer.data,
+                "user": serializer.data,
             }
             response = Response(response_data, status=status.HTTP_200_OK)
 
             # Refresh Token을 쿠키로 설정
             response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="None")
+            logger.info(response.data)
             return response
         except Exception as e:
             logger.error(f"{provider} 로그인 처리 중 오류 발생: {str(e)}")
             raise InternalServerException(f"{provider} 로그인 처리 중 오류가 발생했습니다.", code="social_login_failed")
+
+    def _download_profile_image(self, url):
+        """
+        주어진 URL에서 이미지를 다운로드하여 ContentFile로 반환.
+        """
+        try:
+            response = urlopen(url)
+            image_data = response.read()
+
+            # 파일 확장자 확인
+            content_type = response.headers.get("Content-Type")
+            extension = guess_extension(content_type.split(";")[0]) if content_type else ".jpg"
+
+            # 고유한 파일 이름 생성
+            file_name = f"profile_image_{uuid.uuid4().hex}{extension}"
+
+            return ContentFile(image_data, name=file_name)
+        except Exception as e:
+            logger.error(f"Failed to download profile image: {e}")
+            return None
 
     def _get_social_access_token(self, provider, code, state=None):
         """소셜 제공자로부터 액세스 토큰 가져오기"""
@@ -152,8 +178,9 @@ class SocialLoginAPIView(APIView):
             return {
                 "name": response_data.get("name", "네이버 사용자"),
                 "email": response_data.get("email"),
-                "profile_image": response_data.get("profile_image"),
-                "phone_number": response_data.get("mobile"),
+                "profile_image": response_data.get("profile_image", ""),
+                "phone_number": response_data.get("mobile", ""),
+                "gender": response_data.get("gender", "F").upper(),
             }
         elif provider == "kakao":
             kakao_account = data.get("kakao_account", {})
@@ -161,14 +188,16 @@ class SocialLoginAPIView(APIView):
             return {
                 "name": profile.get("nickname", "카카오 사용자"),
                 "email": kakao_account.get("email"),
-                "profile_image": profile.get("profile_image_url"),
-                "phone_number": kakao_account.get("phone_number"),
+                "profile_image": profile.get("profile_image_url", ""),
+                "phone_number": kakao_account.get("phone_number", ""),
+                "gender": kakao_account.get("gender", "F").upper(),
             }
         elif provider == "google":
             return {
-                "name": data.get("name"),
+                "name": data.get("name", "Google 사용자"),
                 "email": data.get("email"),
-                "profile_image": data.get("picture"),
+                "profile_image": data.get("picture", ""),
+                "gender": data.get("gender", "F").upper(),
             }
         else:
             raise BadRequestException("지원되지 않는 소셜 제공자입니다.", code="unsupported_provider")

@@ -50,7 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=13)
     prefer_service = MultiSelectField(choices=SERVICE_CHOICES, max_length=10, null=True, blank=True)
     prefer_location = MultiSelectField(choices=AREA_CHOICES, max_length=30, max_choices=3, null=True, blank=True)
-    profile_image = models.ImageField(max_length=200, null=True, blank=True, upload_to="images/profile/")
+    profile_image = models.ImageField(max_length=200, null=True, blank=True, upload_to="images/users/profile/")
     is_active = models.BooleanField(default=True)
     is_expert = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)

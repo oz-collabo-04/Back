@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 
-from django.contrib.sites import requests
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
@@ -82,81 +82,81 @@ class RefreshTokenSerializer(serializers.Serializer):
         outstanding_tokens.delete()
 
 
-class SocialLoginSerializer(serializers.Serializer):
-    """소셜 로그인 공통 시리얼라이저"""
+class SocialLoginSerializer(serializers.ModelSerializer):
+    """
+    소셜 로그인 공통 시리얼라이저
+    """
 
-    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    email = serializers.EmailField(required=True)
-    profile_image = serializers.URLField(required=False, allow_blank=True)
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    gender = serializers.CharField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "name", "gender", "phone_number", "profile_image", "is_expert"]
+        read_only_fields = [
+            "id",
+            "is_expert",
+        ]
+        extra_kwargs = {
+            "email": {
+                "required": True,
+                "validators": [],  # 고유성 검증 제거
+            },
+            "name": {"required": True},
+        }
 
     def validate_email(self, value):
+        # 이메일 유효성은 확인하되, 고유성 검증은 우회
         if not value:
-            raise BadRequestException("사용자 이메일이 제공되지 않았습니다.", code="missing_email")
-        return value
+            raise serializers.ValidationError("이메일은 필수 항목입니다.")
+        return value.strip().lower()
+
+    def validate_gender(self, value):
+        gender = value.strip().upper()
+        if gender in ["MALE", "M"]:
+            return "M"
+        elif gender in ["FEMALE", "F"]:
+            return "F"
+        else:
+            return "F"  # 기본값
 
     def validate_phone_number(self, value):
-        """
-        전화번호 유효성 검증 및 표준화
-        - 전화번호는 항상 010-0000-0000 형태로 변환.
-        """
-        if not value:
-            return None
-
-        phone_number = re.sub(r"[^\d]", "", value)
-        if phone_number.startswith("82"):
+        phone_number = re.sub(r"[^\d]", "", value)  # 숫자만 남기기
+        if phone_number.startswith("82"):  # 국제번호 제거
             phone_number = "0" + phone_number[2:]
 
-        if len(phone_number) not in (10, 11):
-            raise BadRequestException("전화번호 형식이 올바르지 않습니다.", code="invalid_phone_number")
-
-        if len(phone_number) == 10:
-            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:6]}-{phone_number[6:]}"
+        # 전화번호 형식 변환
+        if len(phone_number) == 11:  # 11자리 번호
+            formatted_phone = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
+        elif len(phone_number) == 10:  # 10자리 번호
+            formatted_phone = f"{phone_number[:3]}-{phone_number[3:6]}-{phone_number[6:]}"
         else:
-            formatted_phone_number = f"{phone_number[:3]}-{phone_number[3:7]}-{phone_number[7:]}"
+            raise serializers.ValidationError("유효한 전화번호 형식이 아닙니다.")
 
-        return phone_number
+        # 전화번호 길이 검증
+        if len(formatted_phone) > 13:
+            raise serializers.ValidationError("전화번호는 13자를 초과할 수 없습니다.")
 
-    def save(self, **kwargs):
-        """
-        사용자 생성 또는 업데이트
-        - 이메일을 기준으로 사용자 정보를 저장하거나 기존 사용자 업데이트.
-        """
-        validated_data = {**self.validated_data, **kwargs}
-        email = validated_data["email"]
-        name = validated_data.get("name", "")
-        profile_image = self._clean_profile_image(validated_data.get("profile_image", ""))
-        phone_number = validated_data.get("phone_number", "")
+        return formatted_phone
 
-        # 이메일을 기준으로 사용자 검색
-        user = User.objects.filter(email=email).first()
+    def create(self, validated_data):
+        try:
+            with transaction.atomic():
+                # 이메일을 기반으로 사용자 검색 또는 생성
+                user, created = User.objects.update_or_create(
+                    email=validated_data["email"],
+                    defaults=validated_data,
+                )
 
-        if user:
-            # 기존 사용자 업데이트
-            user.name = name or user.name
-            user.profile_image = profile_image or user.profile_image
-            user.phone_number = phone_number or user.phone_number
-            user.is_active = True  # 활성화 상태 설정
-        else:
-            # 새로운 사용자 생성
-            user = User(email=email, name=name, profile_image=profile_image, phone_number=phone_number)
+                # 프로필 이미지 처리
+                profile_image = validated_data.get("profile_image")
+                if profile_image:
+                    user.profile_image.save(profile_image.name, profile_image)
+                    user.save()
 
-        user.save()
-
-        # 기존 리프레시 토큰 블랙리스트 처리
-        self._blacklist_existing_refresh_tokens(user)
-
-        return user
-
-    def _clean_profile_image(self, profile_image_url):
-        """
-        소셜 로그인 프로필 이미지 URL을 정리하여 저장.
-        """
-        if profile_image_url and profile_image_url.startswith("/media/"):
-            # Remove "/media/" and decode the URL-encoded characters
-            clean_url = profile_image_url[len("/media/") :]
-            return requests.utils.unquote(clean_url)
-        return profile_image_url
+                return user
+        except IntegrityError:
+            raise serializers.ValidationError("이미 동일한 이메일이 존재합니다.")
 
     def _blacklist_existing_refresh_tokens(self, user):
         """
