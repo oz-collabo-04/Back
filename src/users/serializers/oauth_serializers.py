@@ -1,12 +1,11 @@
-from django.db import transaction, IntegrityError
 import re
 import uuid
 from datetime import datetime, timezone
 from mimetypes import guess_extension
-
 from urllib.request import urlopen
 
 from django.core.files.base import ContentFile
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
@@ -17,7 +16,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.exceptions import BadRequestException
 from common.logging_config import logger
 from users.models import User
-
 
 
 class AccessTokenSerializer(serializers.Serializer):
@@ -88,12 +86,14 @@ class RefreshTokenSerializer(serializers.Serializer):
         outstanding_tokens.delete()
 
 
-
 class SocialLoginSerializer(serializers.ModelSerializer):
     """
     소셜 로그인 공통 시리얼라이저
     """
-    profile_image_url = serializers.URLField(write_only=True, required=False, allow_blank=True, help_text="프로필 이미지 URL")
+
+    profile_image_url = serializers.URLField(
+        write_only=True, required=False, allow_blank=True, help_text="프로필 이미지 URL"
+    )
     gender = serializers.CharField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
 

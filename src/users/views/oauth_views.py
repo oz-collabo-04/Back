@@ -170,7 +170,6 @@ class SocialLoginAPIView(APIView):
                 "profile_image": profile.get("profile_image_url", ""),
                 "phone_number": kakao_account.get("phone_number", ""),
                 "gender": kakao_account.get("gender", "F").upper(),
-
             }
         elif provider == "google":
             return {
