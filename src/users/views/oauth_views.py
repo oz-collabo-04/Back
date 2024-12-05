@@ -94,7 +94,7 @@ class SocialLoginAPIView(APIView):
                 httponly=True,
                 secure=True,
                 samesite="None",
-                expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+                expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
             )
             logger.info(response.data)
             return response
