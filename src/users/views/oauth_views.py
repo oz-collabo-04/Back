@@ -65,6 +65,9 @@ class SocialLoginAPIView(APIView):
             # 소셜 사용자 정보 가져오기
             user_info = self._get_social_user_info(provider, access_token)
             user_info["profile_image"] = self._download_profile_image(user_info["profile_image"])
+            if not user_info.get("phone_number"):
+                user_info["phone_number"] = "010-0000-0000"
+
             logger.debug(f"Received user_info: {user_info}")
 
             # 사용자 생성/업데이트
@@ -85,7 +88,14 @@ class SocialLoginAPIView(APIView):
             response = Response(response_data, status=status.HTTP_200_OK)
 
             # Refresh Token을 쿠키로 설정
-            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=True, samesite="None")
+            response.set_cookie(
+                "refresh_token",
+                refresh_token,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+            )
             logger.info(response.data)
             return response
         except Exception as e:
@@ -146,7 +156,9 @@ class SocialLoginAPIView(APIView):
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = requests.post(token_url, data=payload, headers=headers)
-        if response.status_code != 200:
+        if response.status_code != 200 or "error" in response.text:
+            logger.info(payload)
+            logger.info(response.text)
             raise InternalServerException(
                 f"{provider}에서 액세스 토큰을 가져오는 데 실패했습니다.", code="token_fetch_failed"
             )
@@ -165,6 +177,7 @@ class SocialLoginAPIView(APIView):
             raise BadRequestException("지원되지 않는 소셜 제공자입니다.", code="unsupported_provider")
 
         response = requests.get(user_info_url, headers=headers)
+        logger.info(f"{response.status_code}: {response.json()}")
         if response.status_code != 200:
             raise InternalServerException(
                 f"{provider}에서 사용자 정보를 가져오는 데 실패했습니다.", code="user_info_fetch_failed"
@@ -281,20 +294,20 @@ class LogoutView(APIView):
         try:
             # Step 2: 리프레시 토큰 객체 생성
             token = RefreshToken(refresh_token)
+            token.blacklist()
 
-            # Step 3: OutstandingToken에서 삭제 및 BlacklistedToken으로 이동
-            outstanding_token = OutstandingToken.objects.filter(jti=token["jti"]).first()
-            if outstanding_token:
-                BlacklistedToken.objects.get_or_create(token=outstanding_token)
-                outstanding_token.delete()
-            else:
-                logger.warning("해당 리프레시 토큰을 OutstandingToken에서 찾을 수 없습니다.")
-
-        except TokenError as e:
-            logger.error(f"리프레시 토큰 블랙리스트 처리 중 오류 발생: {str(e)}")
-            raise UnauthorizedException(detail="유효하지 않은 리프레시 토큰입니다.", code="INVALID_REFRESH_TOKEN")
+        except Exception as e:
+            logger.error(f"RefreshToken Validation Error. {str(e)}")
+            raise UnauthorizedException(detail=f"RefreshToken Validation Error. {str(e)}")
 
         # Step 4: 성공 응답 반환 및 쿠키 삭제
         response = Response({"detail": "로그아웃에 성공했습니다."}, status=status.HTTP_200_OK)
-        response.delete_cookie("refresh_token")
+        response.set_cookie(
+            "refresh_token",
+            max_age=0,
+            secure=True,
+            httponly=True,
+            expires="Thu, 01 Jan 1970 00:00:00 GMT",
+            samesite="None",
+        )
         return response
