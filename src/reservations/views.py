@@ -1,16 +1,19 @@
+from drf_spectacular import openapi
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from common.exceptions import BadRequestException
 from common.permissions.expert_permissions import IsExpert
 from reservations.models import Reservation
 from reservations.seriailzers import (
     ExpertReservationInfoSerializer,
     ReservationCreateSerializer,
     ReservationInfoSerializer,
+    ReservationListForCalendarSerializer,
 )
 
 
@@ -52,7 +55,7 @@ class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMix
         "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
     )
     serializer_class = ReservationInfoSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsExpert]
     lookup_field = "reservation_id"
 
     def get_object(self):
@@ -88,7 +91,7 @@ class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMix
 
 class ExpertReservationListAPIView(generics.ListAPIView):
     serializer_class = ExpertReservationInfoSerializer
-    permission_classes = [IsExpert]
+    permission_classes = [IsAuthenticated, IsExpert]
 
     def get_queryset(self):
         expert = self.request.user.expert
@@ -99,7 +102,7 @@ class ExpertReservationListAPIView(generics.ListAPIView):
 
 class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ExpertReservationInfoSerializer
-    permission_classes = [IsExpert]
+    permission_classes = [IsAuthenticated, IsExpert]
     lookup_field = "id"
 
     def get_queryset(self):
@@ -107,3 +110,34 @@ class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
         return Reservation.objects.filter(estimation__expert=expert).prefetch_related(
             "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
         )
+
+
+@extend_schema(
+    tags=["Schedule-Calendar"],
+    summary="년 - 월 별로 예약 내역을 가져올 수 있음.",
+    parameters=[
+        openapi.OpenApiParameter(
+            "year", openapi.OpenApiTypes.INT, description="Year for filtering the reservations", required=False
+        ),
+        openapi.OpenApiParameter(
+            "month", openapi.OpenApiTypes.INT, description="Month for filtering the reservations", required=False
+        ),
+    ],
+)
+class ReservationListForCalendarAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, IsExpert]
+    serializer_class = ReservationListForCalendarSerializer
+
+    def get_queryset(self):
+        queryset = Reservation.objects.filter(estimation__expert=self.request.user.expert).prefetch_related(
+            "estimation", "estimation__request", "estimation__request__user", "estimation"
+        )
+        year = self.request.query_params.get("year", None)
+        month = self.request.query_params.get("month", None)
+        if (not year and month) or (not month and year):
+            return BadRequestException("month와 year는 같이 사용되어야 합니다.")
+
+        if year and month:
+            queryset = queryset.filter(estimation__due_date__year=year, estimation__due_date__month=month)
+
+        return queryset
