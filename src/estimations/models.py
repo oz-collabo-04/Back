@@ -18,6 +18,7 @@ class EstimationsRequest(models.Model):
     location = models.CharField(choices=AREA_CHOICES, max_length=20)
     wedding_hall = models.CharField(max_length=50)
     wedding_datetime = models.DateTimeField()
+    is_reception = models.BooleanField(default=False)
     status = models.CharField(max_length=10, choices=REQUEST_STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
