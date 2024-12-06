@@ -73,3 +73,31 @@ class ExpertReservationInfoSerializer(serializers.ModelSerializer):
             user = obj.estimation.request.user
             return {"id": user.id, "name": user.name, "email": user.email, "phone_number": user.phone_number}
         return None
+
+
+class ReservationListForCalendarSerializer(serializers.ModelSerializer):
+    user = UserInfoSerializer(source="estimation.request.user", read_only=True)
+    service = serializers.CharField(source="estimation.service", read_only=True)
+    service_display = serializers.CharField(source="estimation.get_service_display", read_only=True)
+    location = serializers.CharField(source="estimation.request.location", read_only=True)
+    location_display = serializers.CharField(source="estimation.request.get_location_display", read_only=True)
+    wedding_hall = serializers.CharField(source="estimation.request.wedding_hall", read_only=True)
+    wedding_datetime = serializers.CharField(source="estimation.request.wedding_datetime", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = [
+            "id",
+            "user",
+            "service",
+            "service_display",
+            "location",
+            "location_display",
+            "wedding_hall",
+            "wedding_datetime",
+            "status",
+            "status_display",
+            "created_at",
+            "updated_at",
+        ]

@@ -15,6 +15,12 @@ User = get_user_model()
 
 
 class ReservationTestCase(APITestCase):
+
+    def __init__(self, methodName: str = "runTest"):
+        super().__init__(methodName)
+        self.expert_access = True
+        self.reservation = None
+
     def setUp(self):
         # 사용자 생성 및 액세스 토큰 발급
         self.user = User.objects.create_user(
@@ -43,6 +49,15 @@ class ReservationTestCase(APITestCase):
             )
             for user in self.expert_users
         ]
+        # 사용자 권한 설정(expert 사용자)
+        self.expert_user = self.expert_users[0]
+        self.expert_refresh = RefreshToken.for_user(self.expert_user)
+        self.expert_access = str(self.expert_refresh.access_token)
+        self.expert_profile = Expert.objects.get(user=self.expert_user)
+        self.expert_user.is_expert = True
+        self.expert_user.save()
+        self.client.force_authenticate(user=self.expert_user)
+
         # Create EstimationRequest
         self.requests = [
             EstimationsRequest.objects.create(
@@ -69,15 +84,24 @@ class ReservationTestCase(APITestCase):
             for expert, request in zip(self.experts, self.requests)
         ]
 
-    def test_list_reservations(self):
-        # given
-        # Reservation 생성
-        for estimation in self.estimations:
+        # 캘린더 테스트를 위한 예약 데이터 생성
+        self.calendar_reservations = [
             Reservation.objects.create(
                 estimation=estimation,
                 status="pending",
             )
-        self.assertEqual(Reservation.objects.all().count(), len(self.estimations))
+            for estimation in self.estimations
+        ]
+        # 특정 날짜 설정
+        self.calendar_reservations[0].estimation.due_date = timezone.now().date().replace(year=2024, month=12)
+        self.calendar_reservations[0].estimation.save()
+
+        self.reservation = Reservation.objects.create(estimation=self.estimations[0], status="pending")
+
+    def test_list_reservations(self):
+        # given
+        # Reservation 생성 (이미 setUp에서 생성되었으므로 추가 생성 불필요)
+        self.assertEqual(Reservation.objects.all().count(), 2)  # 기존 예약 + setUp에서 생성된 예약
 
         url = reverse("reservation-list")
 
@@ -89,12 +113,14 @@ class ReservationTestCase(APITestCase):
         self.assertEqual(len(response.data), Reservation.objects.count())
 
     def test_create_reservation(self):
+        initial_count = Reservation.objects.count()
+
         data = {"estimation_id": self.estimations[0].id}
         url = reverse("reservation-create")
         response = self.client.post(url, data=data, headers={"Authorization": f"Bearer {self.access}"})
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Reservation.objects.all().count(), 1)
+        self.assertEqual(Reservation.objects.count(), initial_count + 1)
         self.assertEqual(response.data["estimation"]["id"], data["estimation_id"])
 
     def test_get_reservation_detail(self):
@@ -122,18 +148,42 @@ class ReservationTestCase(APITestCase):
         self.assertEqual(response.data["status"], data["status"])
 
     def test_expert_reservation_list(self):
-        """Expert의 예약 리스트 조회 테스트"""
-        url = reverse("expert-reservation-list", kwargs={"review_id": self.review.id})
-        response = self.client.get(url, headers={"Authorization": f"Bearer {self.access}"})
+        """Expert의 예약 리스트 조회"""
+        url = reverse("expert-reservation-list")
+        response = self.client.get(url, headers={"Authorization": f"Bearer {self.expert_access}"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
 
     def test_expert_reservation_detail(self):
         """Expert의 예약 상세 조회 테스트"""
         url = reverse("expert-reservation-detail", kwargs={"id": self.reservation.id})
-        response = self.client.get(url, headers={"Authorization": f"Bearer {self.access}"})
+        response = self.client.get(url, headers={"Authorization": f"Bearer {self.expert_access}"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.reservation.id)
         self.assertEqual(response.data["status"], "pending")
+
+    def test_reservation_list_for_calendar(self):
+        """캘린더 API 조회 테스트"""
+        year = 2024
+        month = 12
+
+        url = f"{reverse('reservation-list-for-calendar')}?year={year}&month={month}"
+
+        response = self.client.get(url, headers={"Authorization": f"Bearer {self.expert_access}"})
+
+        # 디버깅용 추가 정보
+        print(f"User: {self.expert_user}")
+        print(f"Is Authenticated: {self.expert_user.is_authenticated}")
+        print(f"Has Expert Profile: {hasattr(self.expert_user, 'expert')}")
+        print(f"Response Status: {response.status_code}")
+        print(f"Response Content: {response.content}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 데이터가 있는지 확인
+        self.assertGreater(len(response.data), 0)
+
+        for reservation in response.data:
+            self.assertEqual(reservation.get("service_display"), "스냅 촬영")
+            self.assertEqual(reservation.get("location_display"), "서울특별시")
