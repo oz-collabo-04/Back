@@ -1,13 +1,13 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from estimations.models import EstimationsRequest
+from estimations.models import EstimationsRequest, RequestManager
 from expert.models import Expert
 from notifications.models import Notification
 
 
 @receiver(post_save, sender=EstimationsRequest)
-def request_post_save_handler(sender, instance, created, **kwargs):
+def estimation_request_post_save_handler(sender, instance, created, **kwargs):
     if created:
         request = instance
 
@@ -19,9 +19,10 @@ def request_post_save_handler(sender, instance, created, **kwargs):
         # 관련 전문가 필터링
         experts = Expert.objects.filter(
             service__in=service_list,
-            user__gender=request.prefer_gender,
-            available_location=[request.location],
+            # user__gender=request.prefer_gender,
+            available_location__contains=request.location,
         )
+        RequestManager.objects.bulk_create([RequestManager(request=request, expert=expert) for expert in experts])
 
         # 전문가들에게 알림 생성
         for expert in experts:

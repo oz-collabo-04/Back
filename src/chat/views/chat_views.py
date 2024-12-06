@@ -102,4 +102,4 @@ class MessageListCreateAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         room_id = self.kwargs.get("room_id")
-        return Message.objects.filter(room_id=room_id)
+        return Message.objects.filter(room_id=room_id).order_by("timestamp")

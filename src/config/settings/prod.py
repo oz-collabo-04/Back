@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 
 from config.settings.base import *
 
-DEBUG = False
+DEBUG = True
 
 ENV = dotenv_values("../prod.env")
 SECRET_KEY = ENV.get(
@@ -24,6 +24,34 @@ DATABASES = {
     }
 }
 
+# storages 설정
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "location": "media",
+            "default_acl": "public-read",
+            "bucket_name": ENV.get("AWS_STORAGE_BUCKET_NAME", ""),  # S3 버킷 이름
+            "access_key": ENV.get("AWS_ACCESS_KEY_ID", ""),  # AWS Access Key
+            "secret_key": ENV.get("AWS_SECRET_ACCESS_KEY", ""),  # AWS Secret Key
+            "region_name": ENV.get("AWS_S3_REGION_NAME", ""),  # AWS 리전
+            "endpoint_url": ENV.get("AWS_S3_ENDPOINT_URL", "https://kr.object.ncloudstorage.com"),
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "location": "static",
+            "default_acl": "public-read",
+            "bucket_name": ENV.get("AWS_STORAGE_BUCKET_NAME", ""),  # S3 버킷 이름
+            "access_key": ENV.get("AWS_ACCESS_KEY_ID", ""),  # AWS Access Key
+            "secret_key": ENV.get("AWS_SECRET_ACCESS_KEY", ""),  # AWS Secret Key
+            "region_name": ENV.get("AWS_S3_REGION_NAME", ""),  # AWS 리전
+            "endpoint_url": ENV.get("AWS_S3_ENDPOINT_URL", "https://kr.object.ncloudstorage.com"),
+        },
+    },
+}
+
 # OAuth
 NAVER_CLIENT_ID = ENV.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = ENV.get("NAVER_CLIENT_SECRET", "")
@@ -33,19 +61,23 @@ KAKAO_CLIENT_ID = ENV.get("KAKAO_CLIENT_ID", "")
 GOOGLE_CLIENT_ID = ENV.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = ENV.get("GOOGLE_CLIENT_SECRET", "")
 
-# NCP Object Storage 설정
-AWS_ACCESS_KEY_ID = (ENV.get("AWS_ACCESS_KEY_ID", ""),)
-AWS_SECRET_ACCESS_KEY = (ENV.get("AWS_SECRET_ACCESS_KEY", ""),)
-AWS_STORAGE_BUCKET_NAME = (ENV.get("AWS_STORAGE_BUCKET_NAME", ""),)
-AWS_S3_ENDPOINT_URL = "https://kr.object.ncloudstorage.com"  # NCP Endpoint
-AWS_S3_REGION_NAME = "kr-standard"  # 리전 (kr-standard)
-
-# 정적 및 미디어 파일 설정
-STATICFILES_STORAGE = "config.storages.StaticStorage"  # Static 파일 저장소
-DEFAULT_FILE_STORAGE = "config.storages.s3boto3.MediaStorage"  # Media 파일 저장소
-
 # 파일 URL 설정
 AWS_QUERYSTRING_AUTH = False  # False로 설정하면 Public URL로 접근 가능
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-CSRF_COOKIE_SECURE = True  # CSRF 쿠키를 HTTPS에서만 전송
+# 네이버 oauth
+NAVER_CALLBACK_URL = ENV.get("NAVER_CALLBACK_URL", "")
+NAVER_LOGIN_URL = ENV.get("NAVER_LOGIN_URL")
+NAVER_TOKEN_URL = ENV.get("NAVER_TOKEN_URL")
+NAVER_USER_INFO_URL = ENV.get("NAVER_USER_INFO_URL", "")
+
+# 카카오 oauth
+KAKAO_CALLBACK_URL = ENV.get("KAKAO_CALLBACK_URL", "")
+KAKAO_LOGIN_URL = ENV.get("KAKAO_LOGIN_URL", "")
+KAKAO_TOKEN_URL = ENV.get("KAKAO_TOKEN_URL", "")
+KAKAO_USER_INFO_URL = ENV.get("KAKAO_USER_INFO_URL", "")
+KAKAO_ACCESS_TOKEN_INFO_URL = ENV.get("KAKAO_ACCESS_TOKEN_INFO_URL", "")
+
+# 구글 oauth
+GOOGLE_REDIRECT_URI = ENV.get("GOOGLE_REDIRECT_URI", "")
+GOOGLE_TOKEN_URL = ENV.get("GOOGLE_TOKEN_URL", "")
+GOOGLE_USER_INFO_URL = ENV.get("GOOGLE_USER_INFO_URL")
