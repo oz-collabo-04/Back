@@ -85,7 +85,7 @@ class EstimationsRequestSerializer(serializers.ModelSerializer):
             "prefer_gender_display",
             "wedding_hall",
             "wedding_datetime",
-            "location",
+            "is_reception",
             "location_display",
             "status",
             "status_display",
