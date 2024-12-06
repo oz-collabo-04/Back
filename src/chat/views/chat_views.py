@@ -1,16 +1,13 @@
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, mixins, status
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from chat.models import ChatRoom, Message
-from chat.serializers.chat_serializers import (
-    ChatRoomSerializer,
-    ChatroomUpdateSerializer,
-    MessageSerializer,
-)
+from chat.serializers.chat_serializers import ChatRoomSerializer, MessageSerializer
 from common.exceptions import BadRequestException
+from common.permissions.chat_permissions import IsInChatRoom
 
 
 @extend_schema(tags=["Chat"])
@@ -48,7 +45,7 @@ class ChatRoomListCreateAPIView(generics.ListCreateAPIView):
 
 
 class ChatRoomDetailAPIView(generics.RetrieveDestroyAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsInChatRoom]
     serializer_class = ChatRoomSerializer
     lookup_field = "id"
     lookup_url_kwarg = "room_id"
@@ -61,11 +58,14 @@ class ChatRoomDetailAPIView(generics.RetrieveDestroyAPIView):
         """
         chatroom = self.get_object()
         if chatroom.user_exist and chatroom.expert_exist:
-            return Response(
-                {"detail": "참가자가 있는 채팅방은 삭제할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        chatroom.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            if request.user == chatroom.user:
+                chatroom.user_exist = False
+            if request.user == chatroom.expert.user:
+                chatroom.expert_exist = False
+        # 상대방중 한명이라도 없으면 채팅방 삭제
+        else:
+            chatroom.delete()
+        return Response({"detail": "채팅방 나가기에 성공하였습니다."}, status=status.HTTP_200_OK)
 
     @extend_schema(tags=["Chat"])
     def get(self, request, *args, **kwargs):
@@ -76,30 +76,16 @@ class ChatRoomDetailAPIView(generics.RetrieveDestroyAPIView):
 
 
 @extend_schema(tags=["Chat"])
-class ChatRoomUpdateAPIView(generics.GenericAPIView, mixins.UpdateModelMixin):
-    """
-    채팅방 나가기 - 상대방이 존재할 때
-    """
-
-    permission_classes = [IsAuthenticated]
-    serializer_class = ChatroomUpdateSerializer
-    lookup_field = "id"
-    lookup_url_kwarg = "room_id"
-    queryset = ChatRoom.objects.all()
-
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
-
-@extend_schema(tags=["Chat"])
 class MessageListCreateAPIView(generics.ListAPIView):
     """
-    메시지 목록 조회 및 생성 API
+    메시지 목록 조회 API
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsInChatRoom]
     serializer_class = MessageSerializer
+    queryset = Message.objects.all()
+    lookup_url_kwarg = "room_id"
 
     def get_queryset(self):
-        room_id = self.kwargs.get("room_id")
-        return Message.objects.filter(room_id=room_id).order_by("timestamp")
+        message = self.queryset.filter(room_id=self.kwargs[self.lookup_url_kwarg]).order_by("timestamp")
+        return message
