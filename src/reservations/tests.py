@@ -96,10 +96,7 @@ class ReservationTestCase(APITestCase):
         self.calendar_reservations[0].estimation.due_date = timezone.now().date().replace(year=2024, month=12)
         self.calendar_reservations[0].estimation.save()
 
-        self.reservation = Reservation.objects.create(
-            estimation=self.estimations[0],
-            status="pending"
-        )
+        self.reservation = Reservation.objects.create(estimation=self.estimations[0], status="pending")
 
     def test_list_reservations(self):
         # given
