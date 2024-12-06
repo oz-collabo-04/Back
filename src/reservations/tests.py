@@ -187,4 +187,3 @@ class ReservationTestCase(APITestCase):
         for reservation in response.data:
             self.assertEqual(reservation.get("service_display"), "스냅 촬영")
             self.assertEqual(reservation.get("location_display"), "서울특별시")
-
