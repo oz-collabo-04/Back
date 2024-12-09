@@ -39,14 +39,10 @@ class NotificationDetailAPIView(generics.GenericAPIView):
 
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationReadSerializer
-    lookup_url_kwarg = 'notification_id'
+    lookup_url_kwarg = "notification_id"
 
     def get_object(self):
-        return get_object_or_404(
-            Notification,
-            id=self.kwargs[self.lookup_url_kwarg],
-            receiver_id=self.request.user.id
-        )
+        return get_object_or_404(Notification, id=self.kwargs[self.lookup_url_kwarg], receiver_id=self.request.user.id)
 
     def post(self, request, *args, **kwargs):
         notification = self.get_object()

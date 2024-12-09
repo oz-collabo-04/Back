@@ -1,5 +1,5 @@
 from django.db.models import Q
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -24,33 +24,27 @@ class ChatRoomListCreateAPIView(generics.ListCreateAPIView):
                 if status == valid_statuses[0]:
                     chatrooms = ChatRoom.objects.filter(
                         Q(user=user, user_exist=True) | Q(expert__user=user, expert_exist=True),
-                        estimation__reservation__isnull=True
+                        estimation__reservation__isnull=True,
                     )
                     return chatrooms
 
                 chatrooms = ChatRoom.objects.filter(
                     Q(user=user, user_exist=True) | Q(expert__user=user, expert_exist=True),
-                    estimation__reservation__isnull=False
+                    estimation__reservation__isnull=False,
                 )
                 return chatrooms
 
             else:
-                raise BadRequestException(
-                    "쿼리 파라미터의 값이 유효하지 않습니다. choice in ['reserved', 'pending']"
-                )
+                raise BadRequestException("쿼리 파라미터의 값이 유효하지 않습니다. choice in ['reserved', 'pending']")
 
-        return ChatRoom.objects.filter(
-                    Q(user=user, user_exist=True) | Q(expert__user=user, expert_exist=True)
-                )
-
-
+        return ChatRoom.objects.filter(Q(user=user, user_exist=True) | Q(expert__user=user, expert_exist=True))
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
     @extend_schema(
         tags=["Chat"],
-        summary="유저가 마음에 드는 견적이 있으면 채팅방을 생성, 이미 채팅방이 존재하면 기존 채팅방을 내려줌."
+        summary="유저가 마음에 드는 견적이 있으면 채팅방을 생성, 이미 채팅방이 존재하면 기존 채팅방을 내려줌.",
     )
     def post(self, request, *args, **kwargs):
         expert_id = request.data.get("expert_id")

@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from chat.models import ChatRoom, Message
-from estimations.models import EstimationsRequest, Estimation
+from estimations.models import Estimation, EstimationsRequest
 from expert.models import Expert
 
 User = get_user_model()

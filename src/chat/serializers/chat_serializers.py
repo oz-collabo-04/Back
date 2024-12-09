@@ -12,7 +12,7 @@ class EstimationSerializerForChatroom(serializers.ModelSerializer):
 
     class Meta:
         model = Estimation
-        fields = '__all__'
+        fields = "__all__"
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):

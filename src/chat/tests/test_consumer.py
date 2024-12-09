@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from chat.chat_consumer import ChatConsumer
 from chat.models import ChatRoom, Message
-from estimations.models import EstimationsRequest, Estimation
+from estimations.models import Estimation, EstimationsRequest
 from expert.models import Expert
 
 User = get_user_model()
@@ -35,8 +35,8 @@ class ChatConsumerTransactionTest(TransactionTestCase):
             is_active=True,
         )
 
-        self.user_access_token=str(RefreshToken.for_user(self.user).access_token)
-        self.expert_user_access_token=str(RefreshToken.for_user(self.expert_user).access_token)
+        self.user_access_token = str(RefreshToken.for_user(self.user).access_token)
+        self.expert_user_access_token = str(RefreshToken.for_user(self.expert_user).access_token)
 
         # 전문가 생성
         self.expert = Expert.objects.create(
@@ -89,14 +89,10 @@ class ChatConsumerTransactionTest(TransactionTestCase):
 
         room_id = self.chatroom.id
         user_communicator = WebsocketCommunicator(
-            self.application,
-            f"/ws/chat/{room_id}/",
-            subprotocols=[self.user_access_token]
+            self.application, f"/ws/chat/{room_id}/", subprotocols=[self.user_access_token]
         )
         expert_communicator = WebsocketCommunicator(
-            self.application,
-            f"/ws/chat/{room_id}/",
-            subprotocols=[self.expert_user_access_token]
+            self.application, f"/ws/chat/{room_id}/", subprotocols=[self.expert_user_access_token]
         )
         user_communicator.scope["user"] = user
         user_communicator.scope["type"] = "websocket"
@@ -126,18 +122,22 @@ class ChatConsumerTransactionTest(TransactionTestCase):
         # Then: 상대방의 메시지 수신
         expert_response = await asyncio.wait_for(expert_communicator.receive_json_from(), timeout=5)
         self.assertEqual(expert_response["type"], "chat_message")
-        self.assertEqual(expert_response["content"], message['content'])
+        self.assertEqual(expert_response["content"], message["content"])
         self.assertEqual(expert_response["sender"], self.user.id)
 
         # Then: 나의 메시지 수신
         user_response = await asyncio.wait_for(user_communicator.receive_json_from(), timeout=5)
         self.assertEqual(user_response["type"], "chat_message")
-        self.assertEqual(user_response["content"], message['content'])
+        self.assertEqual(user_response["content"], message["content"])
         self.assertEqual(user_response["sender"], self.user.id)
 
-        self.assertTrue(await database_sync_to_async(
-            lambda: Message.objects.filter(sender=self.user, content=message['content'], room=self.chatroom).exists()
-        )())
+        self.assertTrue(
+            await database_sync_to_async(
+                lambda: Message.objects.filter(
+                    sender=self.user, content=message["content"], room=self.chatroom
+                ).exists()
+            )()
+        )
 
         # Finally: WebSocket 연결 종료
         await user_communicator.disconnect()
