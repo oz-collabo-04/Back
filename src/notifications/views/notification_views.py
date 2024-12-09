@@ -23,7 +23,7 @@ class NotificationListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Notification.objects.filter(receiver_id=user.id, is_read=False)
+        return Notification.objects.filter(receiver_id=user.id, is_read=False).order_by("-created_at")
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
