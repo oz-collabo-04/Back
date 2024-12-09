@@ -1,32 +1,26 @@
-import json
-
-from asgiref.sync import async_to_sync
-from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.layers import get_channel_layer
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-from notifications.models import Notification
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from django.contrib.auth.models import AnonymousUser
+from common.logging_config import logger
 
 
-class NotificationConsumer(AsyncWebsocketConsumer):
+class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-        self.user = self.scope["user"]
-        if self.user.is_authenticated:
-            self.group_name = f"notification_{self.user.id}"
-            # 그룹에 연결
-            await self.channel_layer.group_add(self.group_name, self.channel_name)
-            await self.accept()
-        else:
+        if isinstance(self.scope["user"], AnonymousUser):
             # 비인증 유저는 연결을 거부
             await self.close()
+        self.group_name = f"notification_{self.scope["user"].id}"
+        # 그룹에 연결
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept(subprotocol=self.scope["subprotocols"][0])
 
     async def disconnect(self, close_code):
-        # 그룹에서 연결 해제
-        if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        logger.info(f"알림 웹소켓 연결 해제 - {self.group_name}")
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive_json(self, content, **kwargs):
+        await self.channel_layer.group_send(self.group_name, content)
 
     async def send_notification(self, event):
         # 알림 메시지를 클라이언트로 보냅니다
-        notification = event["notification"]
-        await self.send(text_data=json.dumps(notification))
+        logger.info(f"알림을 클라이언트에 전송 : {event}")
+        await self.send_json(event)

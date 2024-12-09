@@ -5,6 +5,7 @@ metadata:
   namespace: default
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     nginx.ingress.kubernetes.io/server-snippets: |
       location /ws/ {
         proxy_pass http://django-service:80;

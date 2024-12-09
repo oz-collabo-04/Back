@@ -1,6 +1,6 @@
 from django.db import models
 
-from estimations.models import EstimationsRequest
+from estimations.models import Estimation
 from expert.models import Expert
 from users.models import User
 
@@ -8,7 +8,7 @@ from users.models import User
 class ChatRoom(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expert = models.ForeignKey(Expert, on_delete=models.CASCADE)
-    request = models.OneToOneField(EstimationsRequest, on_delete=models.RESTRICT)
+    estimation = models.OneToOneField(Estimation, on_delete=models.RESTRICT)
     user_exist = models.BooleanField(default=True)
     expert_exist = models.BooleanField(default=True)
 
