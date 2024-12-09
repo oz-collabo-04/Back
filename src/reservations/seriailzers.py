@@ -50,7 +50,7 @@ class ReservationInfoSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "estimation", "chatroom_id", "created_at", "updated_at")
 
     def get_chatroom_id(self, obj):
-        if not hasattr(obj.estimation, 'chatroom'):
+        if not hasattr(obj.estimation, "chatroom"):
             return None
         return obj.estimation.chatroom.id
 
@@ -88,7 +88,7 @@ class ExpertReservationInfoSerializer(serializers.ModelSerializer):
         return None
 
     def get_chatroom_id(self, obj):
-        if not hasattr(obj.estimation, 'chatroom'):
+        if not hasattr(obj.estimation, "chatroom"):
             return None
         return obj.estimation.chatroom.id
 

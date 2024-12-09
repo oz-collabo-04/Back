@@ -26,7 +26,12 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ("id", "user", "reservation", "content", "rating", "images", "created_at", "updated_at")
-        read_only_fields = ("id", "user", "created_at", "updated_at", )
+        read_only_fields = (
+            "id",
+            "user",
+            "created_at",
+            "updated_at",
+        )
 
     def create(self, validated_data):
         images = validated_data.pop("images", [])
@@ -34,10 +39,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             review = Review.objects.create(**validated_data)
             if images:
-                image_serializer = ReviewImagesSerializers(
-                    data=[{"image": image} for image in images],
-                    many=True
-                )
+                image_serializer = ReviewImagesSerializers(data=[{"image": image} for image in images], many=True)
                 image_serializer.is_valid(raise_exception=True)
                 image_serializer.save(review=review)
 
@@ -53,10 +55,7 @@ class ReviewSerializer(serializers.ModelSerializer):
                 ReviewImages.objects.filter(review=instance).delete()
 
                 # 새로운 리뷰 이미지 저장
-                image_serializer = ReviewImagesSerializers(
-                    data=[{"image": image} for image in images],
-                    many=True
-                )
+                image_serializer = ReviewImagesSerializers(data=[{"image": image} for image in images], many=True)
                 image_serializer.is_valid(raise_exception=True)
                 image_serializer.save(review=instance)
 
