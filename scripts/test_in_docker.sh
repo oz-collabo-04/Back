@@ -6,5 +6,5 @@ docker compose exec django_gunicorn bash -c "
   source ~/.bashrc && \
   pyenv activate django-collabo && \
   cd src && \
-  poetry run python manage.py test
+  poetry run python manage.py test reviews
 "

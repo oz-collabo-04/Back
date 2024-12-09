@@ -43,7 +43,7 @@ class ReservationCreateAPIView(generics.CreateAPIView):
 
     @extend_schema(
         tags=["reservations"],
-        summary="게스트의 예약 생성",
+        summary="전문가와 게스트가 대화 후에 입금이 되면 전문가가 버튼을 눌러 예약을 생성",
         responses={201: ReservationCreateSerializer},
     )
     def post(self, request, *args, **kwargs):
@@ -103,7 +103,7 @@ class ExpertReservationListAPIView(generics.ListAPIView):
 class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ExpertReservationInfoSerializer
     permission_classes = [IsAuthenticated, IsExpert]
-    lookup_field = "id"
+    lookup_url_kwarg = "reservation_id"
 
     def get_queryset(self):
         expert = self.request.user.expert

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from common.exceptions import BadRequestException
 from estimations.models import Estimation
 from expert.models import Expert
 from reservations.models import Reservation
@@ -28,7 +29,7 @@ class EstimationInfoSerializer(serializers.ModelSerializer):
         model = Estimation
         fields = (
             "id",
-            "request_id",
+            "request",
             "request_user",
             "expert",
             "service",
@@ -41,11 +42,17 @@ class EstimationInfoSerializer(serializers.ModelSerializer):
 
 class ReservationInfoSerializer(serializers.ModelSerializer):
     estimation = EstimationInfoSerializer(read_only=True)
+    chatroom_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Reservation
-        fields = ("id", "status", "estimation", "created_at", "updated_at")
-        read_only_fields = ("id", "estimation", "created_at", "updated_at")
+        fields = ("id", "status", "estimation", "chatroom_id", "created_at", "updated_at")
+        read_only_fields = ("id", "estimation", "chatroom_id", "created_at", "updated_at")
+
+    def get_chatroom_id(self, obj):
+        if not hasattr(obj.estimation, 'chatroom'):
+            return None
+        return obj.estimation.chatroom.id
 
 
 class ReservationCreateSerializer(serializers.ModelSerializer):
@@ -57,15 +64,21 @@ class ReservationCreateSerializer(serializers.ModelSerializer):
         fields = ("id", "status", "estimation", "estimation_id", "created_at", "updated_at")
         read_only_fields = ("id", "status", "estimation", "created_at", "updated_at")
 
+    def create(self, validated_data):
+        if Reservation.objects.filter(**validated_data, status__in=["confirmed", "completed"]):
+            raise BadRequestException("Reservation already exists")
+        return Reservation.objects.create(**validated_data, status="confirmed")
+
 
 class ExpertReservationInfoSerializer(serializers.ModelSerializer):
     estimation = EstimationInfoSerializer(read_only=True)
     guest_info = serializers.SerializerMethodField()
+    chatroom_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Reservation
-        fields = ("id", "status", "estimation", "guest_info", "created_at", "updated_at")
-        read_only_fields = ("id", "estimation", "created_at", "updated_at")
+        fields = ("id", "status", "estimation", "guest_info", "chatroom_id", "created_at", "updated_at")
+        read_only_fields = ("id", "estimation", "chatroom_id", "created_at", "updated_at")
 
     def get_guest_info(self, obj):
         # estimation을 통해 요청한 게스트 정보 반환
@@ -73,6 +86,11 @@ class ExpertReservationInfoSerializer(serializers.ModelSerializer):
             user = obj.estimation.request.user
             return {"id": user.id, "name": user.name, "email": user.email, "phone_number": user.phone_number}
         return None
+
+    def get_chatroom_id(self, obj):
+        if not hasattr(obj.estimation, 'chatroom'):
+            return None
+        return obj.estimation.chatroom.id
 
 
 class ReservationListForCalendarSerializer(serializers.ModelSerializer):
