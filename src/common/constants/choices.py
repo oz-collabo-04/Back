@@ -109,6 +109,8 @@ NOTIFICATION_TYPE_CHOICES = [
     ("schedule", "일정 알림"),  # 전문가에게 예약된 일정을 알려줌
 ]
 
+PREFER_GENDER_CHOICES = [("M", "남성"), ("F", "여성"), ("ANY", "상관없음")]
+
 GENDER_CHOICES = [
     ("M", "남성"),
     ("F", "여성"),

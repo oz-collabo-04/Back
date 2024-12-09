@@ -9,6 +9,8 @@ from notifications.models import Notification
 def chat_post_save_handler(sender, instance, created, **kwargs):
     if created:
         message = instance
+        if instance.is_read:
+            return
 
         # 수신자를 설정: 전문가가 보낸 경우 일반 사용자, 사용자가 보낸 경우 전문가
         if message.sender == message.room.user:

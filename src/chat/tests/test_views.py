@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from chat.models import ChatRoom, Message
-from estimations.models import EstimationsRequest
+from estimations.models import Estimation, EstimationsRequest
 from expert.models import Expert
 
 User = get_user_model()
@@ -64,11 +64,29 @@ class ChatAPITestCase(TestCase):
             wedding_datetime="2024-12-12",
         )
 
+        self.estimation = Estimation.objects.create(
+            expert=self.expert,
+            request=self.estimation_request,
+            service=self.estimation_request.service_list,
+            location=self.estimation_request.location,
+            due_date="2024-12-12",
+            charge=150000,
+        )
+
+        self.estimation2 = Estimation.objects.create(
+            expert=self.expert,
+            request=self.estimation_request,
+            service=self.estimation_request.service_list,
+            location=self.estimation_request.location,
+            due_date="2024-12-12",
+            charge=150000,
+        )
+
         # 채팅방 생성
         self.chatroom = ChatRoom.objects.create(
             user=self.user,
             expert=self.expert,
-            request=self.estimation_request2,
+            estimation=self.estimation,
             user_exist=True,
             expert_exist=True,
         )
@@ -93,7 +111,7 @@ class ChatAPITestCase(TestCase):
     def test_create_chatroom(self):
         # When: 새로운 채팅방 생성
         url = reverse("chatroom-list-create")
-        data = {"expert_id": self.expert.id, "request_id": self.estimation_request.id}
+        data = {"expert_id": self.expert.id, "estimation_id": self.estimation2.id}
         response = self.client.post(url, data)
 
         # Then: 채팅방 생성 확인
@@ -118,12 +136,13 @@ class ChatAPITestCase(TestCase):
         url = reverse("chatroom-detail", kwargs={"room_id": self.chatroom.id})
         response = self.client.delete(url)
 
-        # Then: 삭제 불가 확인
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Then: 채팅방 유저의 상태 변경 확인
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.chatroom.refresh_from_db()
+        self.assertFalse(self.chatroom.user_exist)
 
-    def test_delete_empty_chatroom(self):
+    def test_delete_other_empty_chatroom(self):
         # Given: 참가자가 없는 채팅방
-        self.chatroom.user_exist = False
         self.chatroom.expert_exist = False
         self.chatroom.save()
 
@@ -132,7 +151,7 @@ class ChatAPITestCase(TestCase):
         response = self.client.delete(url)
 
         # Then: 삭제 성공 확인
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(ChatRoom.objects.filter(id=self.chatroom.id).exists())
 
     def test_list_messages(self):

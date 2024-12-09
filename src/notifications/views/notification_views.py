@@ -32,20 +32,24 @@ class NotificationListAPIView(generics.ListAPIView):
 
 
 @extend_schema(tags=["Notification"])
-class NotificationDetailAPIView(generics.GenericAPIView, mixins.UpdateModelMixin):
+class NotificationDetailAPIView(generics.GenericAPIView):
     """
     특정 알림 읽음 처리 API
     """
 
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationReadSerializer
+    lookup_url_kwarg = "notification_id"
 
     def get_object(self):
-        notification_id = self.kwargs.get("notification_id")
-        return get_object_or_404(Notification, id=notification_id, receiver_id=self.request.user.id)
+        return get_object_or_404(Notification, id=self.kwargs[self.lookup_url_kwarg], receiver_id=self.request.user.id)
 
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+
+        return Response(self.get_serializer(notification).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Notification"])
@@ -56,7 +60,7 @@ class NotificationReadAllAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         user = request.user
         notifications = Notification.objects.filter(receiver_id=user.id, is_read=False)
         notifications.update(is_read=True)

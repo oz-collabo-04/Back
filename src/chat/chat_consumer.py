@@ -90,14 +90,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def disconnect(self, code):
         logger.info(f"socket closed. - {code}")
         # 상대방에게 채팅방에서 연결이 해제되었음을 알림 -> 나가기랑 별도.
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "chat_exited",
-                "exit_user": self.scope["user"].id,
-                "message": f"{self.scope["user"].name} 님의 연결이 해제되었습니다.",
-            },
-        )
+        if not isinstance(self.scope["user"], AnonymousUser):
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_exited",
+                    "exit_user": self.scope["user"].id,
+                    "message": f"{self.scope["user"].name} 님의 연결이 해제되었습니다.",
+                },
+            )
         # 그룹에서 제거
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
