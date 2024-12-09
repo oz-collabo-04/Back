@@ -81,6 +81,7 @@ class ReviewAPITestCase(APITestCase):
             "rating": 5.0,
         }
         url = reverse("review-list-create")
+
         response = self.client.post(url, review_data, headers={"Authorization": f"Bearer {self.access}"})
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
