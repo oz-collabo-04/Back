@@ -11,7 +11,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/users/", include("users.urls")),
     path("api/v1/experts/", include("expert.urls")),
-    path("api/v1/experts/reservations", include("reservations.urls.expert_urls")),
+    path("api/v1/experts/reservations/", include("reservations.urls.expert_urls")),
     path("api/v1/experts/reviews/", include("reviews.urls.expert_urls")),
     path("api/v1/experts/estimations/", include("estimations.urls.expert_urls")),
     path("api/v1/estimations/", include("estimations.urls.guest_urls")),

@@ -5,7 +5,7 @@ from reservations.models import Reservation
 
 
 class Review(models.Model):
-    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
+    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE)
     content = models.TextField(max_length=500)
     rating = models.DecimalField(choices=RATING_CHOICES, decimal_places=1, max_digits=2)
     created_at = models.DateTimeField(auto_now_add=True)

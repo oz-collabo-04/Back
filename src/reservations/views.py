@@ -18,10 +18,6 @@ from reservations.seriailzers import (
 
 
 class ReservationListAPIView(generics.ListAPIView):
-
-    queryset = Reservation.objects.all().prefetch_related(
-        "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
-    )
     serializer_class = ReservationInfoSerializer
     permission_classes = [AllowAny]
 
@@ -32,6 +28,12 @@ class ReservationListAPIView(generics.ListAPIView):
     )
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = Reservation.objects.filter(estimation__request__user=self.request.user).prefetch_related(
+            "estimation", "estimation__request", "estimation__request__user", "estimation__expert"
+        )
+        return queryset
 
 
 class ReservationCreateAPIView(generics.CreateAPIView):
@@ -72,7 +74,7 @@ class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMix
     @extend_schema(
         tags=["reservations"],
         summary="게스트의 예약 상태 변경 - 전체 수정",
-        responses={200: ReservationCreateSerializer},
+        responses={200: ReservationInfoSerializer},
     )
     def put(self, request, *args, **kwargs):
         reservation = self.get_object()
@@ -83,12 +85,13 @@ class ReservationRetrieveUpdateAPIView(generics.GenericAPIView, RetrieveModelMix
     @extend_schema(
         tags=["reservations"],
         summary="게스트의 예약 상태 변경 - 부분 수정",
-        responses={200: ReservationCreateSerializer},
+        responses={200: ReservationInfoSerializer},
     )
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
 
+@extend_schema(tags=["expert-reservations"], summary="전문가가 자신에게 들어온 예약리스트를 조회")
 class ExpertReservationListAPIView(generics.ListAPIView):
     serializer_class = ExpertReservationInfoSerializer
     permission_classes = [IsAuthenticated, IsExpert]
@@ -100,6 +103,7 @@ class ExpertReservationListAPIView(generics.ListAPIView):
         )
 
 
+@extend_schema(tags=["expert-reservations"], summary="전문가가 자신에게 들어온 예약 중 특정 예약을 상세 조회")
 class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ExpertReservationInfoSerializer
     permission_classes = [IsAuthenticated, IsExpert]
@@ -113,8 +117,8 @@ class ExpertReservationDetailAPIView(generics.RetrieveAPIView):
 
 
 @extend_schema(
-    tags=["Schedule-Calendar"],
-    summary="년 - 월 별로 예약 내역을 가져올 수 있음.",
+    tags=["expert-reservations"],
+    summary="전문가가 필터링을 통해 년 - 월 별로 예약 내역을 가져올 수 있음.",
     parameters=[
         openapi.OpenApiParameter(
             "year", openapi.OpenApiTypes.INT, description="Year for filtering the reservations", required=False
