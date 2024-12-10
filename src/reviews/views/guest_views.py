@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -11,6 +12,7 @@ from reviews.serializers.guest_seriailzers import ReviewSerializer
 class ReviewListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReviewSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         return Review.objects.filter(reservation__estimation__request__user=self.request.user)
@@ -27,7 +29,17 @@ class ReviewListCreateAPIView(generics.ListCreateAPIView):
         summary="게스트가 견적 서비스 이용 후 리뷰를 작성",
     )
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        try:
+            review = Review.objects.get(reservation_id=request.data["reservation"])
+            return Response(
+                {
+                    "detail": "이미 리뷰를 작성한 내역이 존재합니다.",
+                    "review": self.get_serializer(review).data,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Review.DoesNotExist:
+            return self.create(request, *args, **kwargs)
 
 
 @extend_schema(
@@ -50,6 +62,7 @@ class ReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     lookup_field = "id"
     lookup_url_kwarg = "review_id"
