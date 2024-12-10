@@ -30,6 +30,7 @@ class Estimation(models.Model):
     service = models.CharField(choices=SERVICE_CHOICES, max_length=10)
     location = models.CharField(choices=AREA_CHOICES, max_length=30)
     due_date = models.DateField()
+    description = models.TextField()
     charge = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
