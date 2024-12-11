@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from estimations.models import Estimation, EstimationsRequest, RequestManager
-from estimations.serializers.guest_seriailzers import EstimationExpertSerializer
 from users.models import User
 
 
@@ -18,6 +17,7 @@ class EstimationCreateByExpertSerializer(serializers.ModelSerializer):
             "due_date",
             "service",
             "service_display",
+            "description",
             "charge",
             "created_at",
             "updated_at",
@@ -38,6 +38,7 @@ class EstimationUpdateByExpertSerializer(serializers.ModelSerializer):
             "due_date",
             "service",
             "service_display",
+            "description",
             "charge",
             "created_at",
             "updated_at",
@@ -48,7 +49,7 @@ class EstimationUpdateByExpertSerializer(serializers.ModelSerializer):
 class RequestUserSerializerForExpert(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "phone_number", "name"]
+        fields = ["id", "email", "phone_number", "name", "profile_image"]
 
 
 class EstimationRequestSerializerForExpert(serializers.ModelSerializer):
@@ -87,6 +88,7 @@ class EstimationListForExpertSerializer(serializers.ModelSerializer):
             "location",
             "location_display",
             "due_date",
+            "description",
             "charge",
             "created_at",
             "updated_at",
